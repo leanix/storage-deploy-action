@@ -1,0 +1,23 @@
+name: Test storage deploy
+on: [push]
+
+jobs:
+  test:
+    name: Test Deployment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Get credentials
+        uses: leanix/secrets-action@master
+        with:
+          secret-store-credentials: ${{ secrets.INJECTED_SECRET_STORE_CREDENTIALS }}
+
+      - name: Use k8s deploy action
+        uses: ./
+        with:
+          source-directory: test
+          container: storage-deploy-action-public
+          environment: test
+          region: westeurope
