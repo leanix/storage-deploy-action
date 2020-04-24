@@ -1,0 +1,20 @@
+{
+  "name": "storage-deploy-action",
+  "description": "Github Action to deploy files to blob storage.",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leanix/storage-deploy-action.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "Unlicense",
+  "bugs": {
+    "url": "https://github.com/leanix/release-docker-image-action/issues"
+  },
+  "homepage": "https://github.com/leanix/storage-deploy-action#readme",
+  "dependencies": {
+    "@actions/core": "1.2.2",
+    "@actions/exec": "1.0.3"
+  }
+}

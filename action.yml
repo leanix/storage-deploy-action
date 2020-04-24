@@ -1,0 +1,21 @@
+name: 'LeanIX Storage Deployment'
+description: 'Deploy files to blob storage'
+inputs:
+  container:
+    description: 'Name of the storage container to deploy to'
+    required: true
+  source-directory:
+    description: 'Directory containing the files to deploy'
+    default: '.'
+    required: true
+  environment:
+    description: 'Environment to deploy to'
+    default: 'test'
+    required: false
+  region:
+    description: 'Region to deploy to'
+    default: ''
+    required: false
+runs:
+  using: 'node12'
+  main: 'dist/index.js'
