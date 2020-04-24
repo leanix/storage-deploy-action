@@ -10,10 +10,12 @@ with:
   container: foo-public        # Name of the storage container to deploy to
   source-directory: dist/      # Directory containing the files to deploy
   environment: prod            # Optional, environment to deploy to, defaults to 'test'
-  region: westeurope           # Optional, Region to deploy to, default is all regions
+  region: westeurope           # Optional, region to deploy to, default is all regions having a suitable storage account and container
 ```
 
 This action requires that you also use the "leanix/secrets-action@master".
+The action will check that you only deploy to a container that has the name of your repository in it to prevent you from deploying to the wrong container accidentally.
+The action will also fail if it cannot find any container considering the given environment & region parameters.
 
 ## Update Action
 
