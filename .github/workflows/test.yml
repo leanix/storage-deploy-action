@@ -14,7 +14,7 @@ jobs:
         with:
           secret-store-credentials: ${{ secrets.INJECTED_SECRET_STORE_CREDENTIALS }}
 
-      - name: Use k8s deploy action
+      - name: Use storage deploy action
         uses: ./
         with:
           source-directory: test
