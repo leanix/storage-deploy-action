@@ -20,4 +20,33 @@ jobs:
           source-directory: test
           container: storage-deploy-action-public
           environment: test
-          region: westeurope
+
+      - name: Should fail because of forbidden container name
+        uses: ./
+        continue-on-error: true
+        with:
+          source-directory: test
+          container: foobar
+
+      - name: Should fail because of not existing container name
+        uses: ./
+        continue-on-error: true
+        with:
+          source-directory: test
+          container: storage-deploy-action-unknown
+
+      - name: Should fail because of invalid region
+        uses: ./
+        continue-on-error: true
+        with:
+          source-directory: test
+          container: storage-deploy-action-public
+          region: foobar
+
+      - name: Should fail because of invalid environment
+        uses: ./
+        continue-on-error: true
+        with:
+          source-directory: test
+          container: storage-deploy-action-public
+          environment: foobar

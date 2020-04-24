@@ -15,6 +15,7 @@
   "homepage": "https://github.com/leanix/storage-deploy-action#readme",
   "dependencies": {
     "@actions/core": "1.2.2",
-    "@actions/exec": "1.0.3"
+    "@actions/exec": "1.0.3",
+    "stream-blackhole": "1.0.3"
   }
 }

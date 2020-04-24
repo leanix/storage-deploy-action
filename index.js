@@ -1,5 +1,6 @@
 const core = require('@actions/core');
 const exec = require('@actions/exec');
+const noopStream = require('stream-blackhole')();
 
 (async () => {
     try {
@@ -9,27 +10,69 @@ const exec = require('@actions/exec');
         const sourceDirectory = core.getInput('source-directory', {required: true});
         const region = core.getInput('region') ? core.getInput('region') : '';
         const environment = core.getInput('environment') ? core.getInput('environment') : 'test';
-        const execOptions = {stdout: (data) => core.info(data.toString()), stderror: (data) => core.error(data.toString())};
+        const onlyShowErrorsExecOptions = {outStream: noopStream, errStream: process.stderr};
+        const availableRegions = ['westeurope', 'eastus', 'canadacentral', 'australiaeast'];
 
         // Check environment
         if (!['test', 'prod'].includes(environment)) {
-            core.setFailed(`Unknown environment ${environment}, must be 'test' or 'prod'`);
+            throw new Error(`Unknown environment ${environment}, must be on of: test, prod`);
         }
 
-        core.exportVariable('AZCOPY_SPA_CLIENT_SECRET', process.env.ARM_CLIENT_SECRET)
+        // Check region
+        if (region && !availableRegions.includes(region)) {
+            const availableRegionsString = availableRegions.join(', ');
+            throw new Error(`Unknown region ${region}, must be on of: ${availableRegionsString}`);
+        }
 
-        // Install & login to Azure Copy
-        await exec.exec('wget', ['-O', 'azcopy.tar.gz', 'https://aka.ms/downloadazcopy-v10-linux'], execOptions)
-        await exec.exec('tar', ['--strip-components=1', '-xzf', 'azcopy.tar.gz'], execOptions)
+        const repositoryShortName = process.env.GITHUB_REPOSITORY.replace(/leanix(?:\/|-)/gi, '');
+        if (container.includes(repositoryShortName) === false) {
+            throw new Error(`You may not deploy to a container that does not correspond to your repository name (${container} does not contain ${repositoryShortName})`);
+        }
+
+        // Install & login to Azure / Azure Copy
+        await exec.exec('wget', ['-q', '-O', 'azcopy.tar.gz', 'https://aka.ms/downloadazcopy-v10-linux'], onlyShowErrorsExecOptions)
+        await exec.exec('tar', ['--strip-components=1', '-xzf', 'azcopy.tar.gz'], onlyShowErrorsExecOptions)
+        core.exportVariable('AZCOPY_SPA_CLIENT_SECRET', process.env.ARM_CLIENT_SECRET)
         await exec.exec('./azcopy', [
             'login', '--service-principal',
             '--application-id', process.env.ARM_CLIENT_ID,
             '--tenant-id', process.env.ARM_TENANT_ID
-        ], execOptions);
+        ], onlyShowErrorsExecOptions);
+        await exec.exec('az', [
+            'login', '--service-principal',
+            '--username', process.env.ARM_CLIENT_ID,
+            '--password', process.env.ARM_CLIENT_SECRET,
+            '--tenant', process.env.ARM_TENANT_ID
+        ], onlyShowErrorsExecOptions);
 
-        for (currentRegion of ['westeurope', 'eastus', 'canadacentral', 'australiaeast']) {
+        let deployedAnything = false;
+
+        for (currentRegion of availableRegions) {
             if (region && (region != currentRegion)) {
                 core.info(`Not deploying to region ${currentRegion}...`);
+                continue;
+            }
+
+            const storageAccount = `leanix${currentRegion}${environment}`;
+
+            const exitCode = await exec.exec('az', [
+                'storage', 'account', 'show',
+                '--name', storageAccount
+            ], {ignoreReturnCode: true, silent: true});
+            if (exitCode > 0) {
+                core.info(`Not deploying to region ${currentRegion} because no storage account named ${storageAccount} exists.`);
+                continue;
+            }
+
+            let response = '';
+            await exec.exec('az', [
+                'storage', 'container', 'exists',
+                '--account-name', storageAccount,
+                '--name', container
+            ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => response += data}});
+            let result = JSON.parse(response);
+            if (!result.exists) {
+                core.info(`Not deploying to region ${currentRegion} because no container ${container} exists.`);
                 continue;
             }
 
@@ -38,12 +81,18 @@ const exec = require('@actions/exec');
             // Sync directory
             await exec.exec('./azcopy', [
                 'sync', sourceDirectory,
-                `https://leanix${region}${environment}.blob.core.windows.net/${container}/`,
+                `https://${storageAccount}.blob.core.windows.net/${container}/`,
                 '--recursive',
                 '--delete-destination', 'true'
-            ], execOptions);
+            ]);
+
+            deployedAnything = true;
 
             core.info(`Finished deploying to region ${currentRegion}.`);
+        }
+
+        if (!deployedAnything) {
+            throw new Error('Cound not find any container to deploy to!');
         }
     } catch (e) {
         core.setFailed(e.message);
