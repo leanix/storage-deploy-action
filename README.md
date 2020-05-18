@@ -11,6 +11,7 @@ with:
   source-directory: dist/      # Directory containing the files to deploy
   environment: prod            # Optional, environment to deploy to, defaults to 'test'
   region: westeurope           # Optional, region to deploy to, default is all regions having a suitable storage account and container
+  delete-destination: false    # Optional, whether to delete files in the destination that are no longer existing in the source directory, defaults to 'true'
 ```
 
 This action requires that you also use the "leanix/secrets-action@master".
