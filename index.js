@@ -9,6 +9,7 @@ const noopStream = require('stream-blackhole')();
         const container = core.getInput('container', {required: true});
         const sourceDirectory = core.getInput('source-directory', {required: true});
         const region = core.getInput('region') ? core.getInput('region') : '';
+        const deleteDestination = (core.getInput('delete-destination') == 'true') ? true : false;
         const environment = core.getInput('environment') ? core.getInput('environment') : 'test';
         const onlyShowErrorsExecOptions = {outStream: noopStream, errStream: process.stderr};
         const availableRegions = ['westeurope', 'eastus', 'canadacentral', 'australiaeast'];
@@ -83,7 +84,7 @@ const noopStream = require('stream-blackhole')();
                 'sync', sourceDirectory,
                 `https://${storageAccount}.blob.core.windows.net/${container}/`,
                 '--recursive',
-                '--delete-destination', 'true'
+                '--delete-destination', deleteDestination ? 'true' : 'false'
             ]);
 
             deployedAnything = true;
