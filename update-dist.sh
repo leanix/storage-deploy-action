@@ -1,6 +1,6 @@
 #!/bin/bash
 
-npm i -g @zeit/ncc
+npm i -g @vercel/ncc
 
 ncc build index.js
 
