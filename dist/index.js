@@ -2,12 +2,12 @@ module.exports =
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 448:
-/***/ ((__unused_webpack_module, __unused_webpack_exports, __webpack_require__) => {
+/***/ 456:
+/***/ ((__unused_webpack_module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const core = __webpack_require__(98);
-const exec = __webpack_require__(504);
-const noopStream = __webpack_require__(718)();
+const core = __nccwpck_require__(127);
+const exec = __nccwpck_require__(49);
+const noopStream = __nccwpck_require__(857)();
 
 (async () => {
     try {
@@ -19,7 +19,13 @@ const noopStream = __webpack_require__(718)();
         const deleteDestination = (core.getInput('delete-destination') == 'true') ? true : false;
         const environment = core.getInput('environment') ? core.getInput('environment') : 'test';
         const onlyShowErrorsExecOptions = {outStream: noopStream, errStream: process.stderr};
-        const availableRegions = ['westeurope', 'eastus', 'canadacentral', 'australiaeast'];
+        const availableRegions = [
+            {region:'westeurope',short:'eu'},
+            {region:'eastus',short:'us'},
+            {region:'canadacentral',short:'ca'},
+            {region:'australiaeast',short:'au'},
+            {region:'germanywestcentral',short:'de'}
+        ];
 
         // Check environment
         if (!['test', 'prod'].includes(environment)) {
@@ -55,13 +61,17 @@ const noopStream = __webpack_require__(718)();
 
         let deployedAnything = false;
 
-        for (currentRegion of availableRegions) {
+        for (currentRegionMap of availableRegions) {
+            const currentRegion = currentRegionMap.region;
             if (region && (region != currentRegion)) {
                 core.info(`Not deploying to region ${currentRegion}...`);
                 continue;
             }
 
-            const storageAccount = `leanix${currentRegion}${environment}`;
+            let storageAccount = `leanix${currentRegion}${environment}`;
+            if (storageAccount.length > 24) {
+                storageAccount = `leanix${currentRegionMap.short}${environment}`;
+            }
 
             const exitCode = await exec.exec('az', [
                 'storage', 'account', 'show',
@@ -110,8 +120,8 @@ const noopStream = __webpack_require__(718)();
 
 /***/ }),
 
-/***/ 763:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ 604:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
@@ -123,8 +133,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const os = __importStar(__webpack_require__(87));
-const utils_1 = __webpack_require__(311);
+const os = __importStar(__nccwpck_require__(87));
+const utils_1 = __nccwpck_require__(245);
 /**
  * Commands
  *
@@ -196,8 +206,8 @@ function escapeProperty(s) {
 
 /***/ }),
 
-/***/ 98:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ 127:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
@@ -218,11 +228,11 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const command_1 = __webpack_require__(763);
-const file_command_1 = __webpack_require__(39);
-const utils_1 = __webpack_require__(311);
-const os = __importStar(__webpack_require__(87));
-const path = __importStar(__webpack_require__(622));
+const command_1 = __nccwpck_require__(604);
+const file_command_1 = __nccwpck_require__(352);
+const utils_1 = __nccwpck_require__(245);
+const os = __importStar(__nccwpck_require__(87));
+const path = __importStar(__nccwpck_require__(622));
 /**
  * The code to exit an action
  */
@@ -441,8 +451,8 @@ exports.getState = getState;
 
 /***/ }),
 
-/***/ 39:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ 352:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
@@ -457,9 +467,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 // We use any as a valid input type
 /* eslint-disable @typescript-eslint/no-explicit-any */
-const fs = __importStar(__webpack_require__(747));
-const os = __importStar(__webpack_require__(87));
-const utils_1 = __webpack_require__(311);
+const fs = __importStar(__nccwpck_require__(747));
+const os = __importStar(__nccwpck_require__(87));
+const utils_1 = __nccwpck_require__(245);
 function issueCommand(command, message) {
     const filePath = process.env[`GITHUB_${command}`];
     if (!filePath) {
@@ -477,7 +487,7 @@ exports.issueCommand = issueCommand;
 
 /***/ }),
 
-/***/ 311:
+/***/ 245:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -503,8 +513,8 @@ exports.toCommandValue = toCommandValue;
 
 /***/ }),
 
-/***/ 504:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ 49:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
@@ -518,7 +528,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const tr = __webpack_require__(569);
+const tr = __nccwpck_require__(469);
 /**
  * Exec a command.
  * Output will be streamed to the live console.
@@ -547,8 +557,8 @@ exports.exec = exec;
 
 /***/ }),
 
-/***/ 569:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ 469:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
@@ -562,12 +572,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const os = __webpack_require__(87);
-const events = __webpack_require__(614);
-const child = __webpack_require__(129);
-const path = __webpack_require__(622);
-const io = __webpack_require__(207);
-const ioUtil = __webpack_require__(717);
+const os = __nccwpck_require__(87);
+const events = __nccwpck_require__(614);
+const child = __nccwpck_require__(129);
+const path = __nccwpck_require__(622);
+const io = __nccwpck_require__(864);
+const ioUtil = __nccwpck_require__(887);
 /* eslint-disable @typescript-eslint/unbound-method */
 const IS_WINDOWS = process.platform === 'win32';
 /*
@@ -1141,8 +1151,8 @@ class ExecState extends events.EventEmitter {
 
 /***/ }),
 
-/***/ 717:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ 887:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
@@ -1157,9 +1167,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 var _a;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const assert_1 = __webpack_require__(357);
-const fs = __webpack_require__(747);
-const path = __webpack_require__(622);
+const assert_1 = __nccwpck_require__(357);
+const fs = __nccwpck_require__(747);
+const path = __nccwpck_require__(622);
 _a = fs.promises, exports.chmod = _a.chmod, exports.copyFile = _a.copyFile, exports.lstat = _a.lstat, exports.mkdir = _a.mkdir, exports.readdir = _a.readdir, exports.readlink = _a.readlink, exports.rename = _a.rename, exports.rmdir = _a.rmdir, exports.stat = _a.stat, exports.symlink = _a.symlink, exports.unlink = _a.unlink;
 exports.IS_WINDOWS = process.platform === 'win32';
 function exists(fsPath) {
@@ -1343,8 +1353,8 @@ function isUnixExecutable(stats) {
 
 /***/ }),
 
-/***/ 207:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ 864:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
@@ -1358,10 +1368,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const childProcess = __webpack_require__(129);
-const path = __webpack_require__(622);
-const util_1 = __webpack_require__(669);
-const ioUtil = __webpack_require__(717);
+const childProcess = __nccwpck_require__(129);
+const path = __nccwpck_require__(622);
+const util_1 = __nccwpck_require__(669);
+const ioUtil = __nccwpck_require__(887);
 const exec = util_1.promisify(childProcess.exec);
 /**
  * Copies a file or folder.
@@ -1640,11 +1650,11 @@ function copyFile(srcFile, destFile, force) {
 
 /***/ }),
 
-/***/ 718:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+/***/ 857:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-var util = __webpack_require__(669);
-var stream = __webpack_require__(413);
+var util = __nccwpck_require__(669);
+var stream = __nccwpck_require__(413);
 
 util.inherits(Blackhole, stream.Writable);
 function Blackhole (options) {
@@ -1734,7 +1744,7 @@ module.exports = require("util");;
 /******/ 	var __webpack_module_cache__ = {};
 /******/ 	
 /******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
+/******/ 	function __nccwpck_require__(moduleId) {
 /******/ 		// Check if module is in cache
 /******/ 		if(__webpack_module_cache__[moduleId]) {
 /******/ 			return __webpack_module_cache__[moduleId].exports;
@@ -1749,7 +1759,7 @@ module.exports = require("util");;
 /******/ 		// Execute the module function
 /******/ 		var threw = true;
 /******/ 		try {
-/******/ 			__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/ 			__webpack_modules__[moduleId].call(module.exports, module, module.exports, __nccwpck_require__);
 /******/ 			threw = false;
 /******/ 		} finally {
 /******/ 			if(threw) delete __webpack_module_cache__[moduleId];
@@ -1762,10 +1772,10 @@ module.exports = require("util");;
 /************************************************************************/
 /******/ 	/* webpack/runtime/compat */
 /******/ 	
-/******/ 	__webpack_require__.ab = __dirname + "/";/************************************************************************/
+/******/ 	__nccwpck_require__.ab = __dirname + "/";/************************************************************************/
 /******/ 	// module exports must be returned from runtime so entry inlining is disabled
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(448);
+/******/ 	return __nccwpck_require__(456);
 /******/ })()
 ;
