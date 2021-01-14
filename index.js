@@ -12,7 +12,13 @@ const noopStream = require('stream-blackhole')();
         const deleteDestination = (core.getInput('delete-destination') == 'true') ? true : false;
         const environment = core.getInput('environment') ? core.getInput('environment') : 'test';
         const onlyShowErrorsExecOptions = {outStream: noopStream, errStream: process.stderr};
-        const availableRegions = ['westeurope', 'eastus', 'canadacentral', 'australiaeast'];
+        const availableRegions = [
+            {region:'westeurope',short:'eu'},
+            {region:'eastus',short:'us'},
+            {region:'canadacentral',short:'ca'},
+            {region:'australiaeast',short:'au'},
+            {region:'germanywestcentral',short:'de'}
+        ];
 
         // Check environment
         if (!['test', 'prod'].includes(environment)) {
@@ -48,13 +54,17 @@ const noopStream = require('stream-blackhole')();
 
         let deployedAnything = false;
 
-        for (currentRegion of availableRegions) {
+        for (currentRegionMap of availableRegions) {
+            const currentRegion = currentRegionMap.region;
             if (region && (region != currentRegion)) {
                 core.info(`Not deploying to region ${currentRegion}...`);
                 continue;
             }
 
-            const storageAccount = `leanix${currentRegion}${environment}`;
+            let storageAccount = `leanix${currentRegion}${environment}`;
+            if (storageAccount.length > 24) {
+                storageAccount = `leanix${currentRegionMap.short}${environment}`;
+            }
 
             const exitCode = await exec.exec('az', [
                 'storage', 'account', 'show',
