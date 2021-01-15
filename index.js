@@ -29,7 +29,7 @@ const noopStream = require('stream-blackhole')();
         const checkRegions = availableRegions.map(o => o.region);
         if (region && !checkRegions.includes(region)) {
             const availableRegionsString = checkRegions.join(', ');
-            throw new Error(`Unknown region ${region}, must be one of: ${availableRegions}`);
+            throw new Error(`Unknown region ${region}, must be one of: ${availableRegionsString}`);
         }
 
         const repositoryShortName = process.env.GITHUB_REPOSITORY.replace(/leanix(?:\/|-)/gi, '');
