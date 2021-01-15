@@ -29,6 +29,15 @@ jobs:
           environment: test
           region: westeurope
 
+      - name: Should fail because of unsupported region
+        uses: ./
+        continue-on-error: true
+        with:
+          source-directory: test
+          container: storage-deploy-action-public
+          environment: test
+          region: northeurope
+
       - name: Should fail because of forbidden container name
         uses: ./
         continue-on-error: true
