@@ -26,7 +26,7 @@ const noopStream = require('stream-blackhole')();
         }
 
         // Check region
-        const checkRegions = _.map(availableRegions, _.property('region'));
+        const checkRegions = availableRegions.map(o => o.region);
         if (region && !checkRegions.includes(region)) {
             const availableRegionsString = checkRegions.join(', ');
             throw new Error(`Unknown region ${region}, must be one of: ${availableRegions}`);
