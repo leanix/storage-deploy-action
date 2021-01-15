@@ -29,13 +29,14 @@ const noopStream = __nccwpck_require__(857)();
 
         // Check environment
         if (!['test', 'prod'].includes(environment)) {
-            throw new Error(`Unknown environment ${environment}, must be on of: test, prod`);
+            throw new Error(`Unknown environment ${environment}, must be one of: test, prod`);
         }
 
         // Check region
-        if (region && !availableRegions.includes(region)) {
-            const availableRegionsString = availableRegions.join(', ');
-            throw new Error(`Unknown region ${region}, must be on of: ${availableRegionsString}`);
+        const checkRegions = availableRegions.map(o => o.region);
+        if (region && !checkRegions.includes(region)) {
+            const availableRegionsString = checkRegions.join(', ');
+            throw new Error(`Unknown region ${region}, must be one of: ${availableRegionsString}`);
         }
 
         const repositoryShortName = process.env.GITHUB_REPOSITORY.replace(/leanix(?:\/|-)/gi, '');
