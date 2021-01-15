@@ -33,8 +33,8 @@ const noopStream = __nccwpck_require__(857)();
         }
 
         // Check region
-        if (region && !availableRegions.includes(region)) {
-            const availableRegionsString = availableRegions.join(', ');
+        if (region && !availableRegions.region.includes(region)) {
+            const availableRegionsString = availableRegions.region.join(', ');
             throw new Error(`Unknown region ${region}, must be on of: ${availableRegionsString}`);
         }
 
