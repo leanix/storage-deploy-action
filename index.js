@@ -26,8 +26,10 @@ const noopStream = require('stream-blackhole')();
         }
 
         // Check region
-        if (region && !availableRegions.includes({region:region})) {
-            throw new Error(`Unknown region ${region}, must be one of: ${availableRegions.region}`);
+        const checkRegions = _.map(availableRegions, _.property('region'));
+        if (region && !checkRegions.includes(region)) {
+            const availableRegionsString = checkRegions.join(', ');
+            throw new Error(`Unknown region ${region}, must be one of: ${availableRegions}`);
         }
 
         const repositoryShortName = process.env.GITHUB_REPOSITORY.replace(/leanix(?:\/|-)/gi, '');
