@@ -1,6 +1,7 @@
 const core = require('@actions/core');
 const exec = require('@actions/exec');
 const noopStream = require('stream-blackhole')();
+const git = require('simple-git/promise')();
 
 (async () => {
     try {
@@ -60,6 +61,42 @@ const noopStream = require('stream-blackhole')();
 
         let deployedAnything = false;
 
+        const branch = process.env.GITHUB_REF.replace(/^refs\/heads\//, '');
+        const normalisedBranch = branch.replace(/\W+/g, '-');
+        const versionTagPrefix = 'VERSION-' + normalisedBranch.toUpperCase() + '-';
+        const tagsOfCurrentCommitString = await git.tag(
+            [
+                '-l', versionTagPrefix + '*',
+                '--points-at', currentCommit,
+                '--sort', '-v:refname'
+            ]
+        );
+
+        let releaseVersion = 0;
+        if (tagsOfCurrentCommitString.length > 0) {
+            // commit is already tagged, so use that tag as the release version 
+            const tagsOfCurrentCommit = tagsOfCurrentCommitString.split('\n');
+            releaseVersion = parseInt(tagsOfCurrentCommit[0].replace(versionTagPrefix, ''));
+            core.info(`Last commit is already tagged with version ${releaseVersion}`);
+        } else {
+            const allVersionTagsString = await git.tag(
+                [
+                    '-l', versionTagPrefix + '*',
+                    '--sort', '-v:refname'
+                ]
+            );
+            
+            if (allVersionTagsString.length > 0) {
+                // as commit is not yet tagged use the last version bumped up as the release version
+                const allVersionTags = allVersionTagsString.split('\n');
+                releaseVersion = parseInt(allVersionTags[0].replace(versionTagPrefix, '')) + 1;
+            } 
+            core.info(`Next version on branch ${branch} is ${releaseVersion}`);
+            const releaseVersionTag = `${versionTagPrefix}${releaseVersion}`;
+            await git.tag([releaseVersionTag, process.env.GITHUB_REF]);
+            await git.pushTags();
+        }
+
         for (currentRegionMap of availableRegions) {
             const currentRegion = currentRegionMap.region;
             if (region && (region != currentRegion)) {
@@ -101,6 +138,11 @@ const noopStream = require('stream-blackhole')();
                 `https://${storageAccount}.blob.core.windows.net/${container}/`,
                 '--recursive',
                 '--delete-destination', deleteDestination ? 'true' : 'false'
+            ]);
+            // Store versioned index.html
+            await exec.exec('./azcopy', [
+                'sync', 'sourceDirectory/index.html',
+                `https://${storageAccount}.blob.core.windows.net/${container}/index_${releaseVersion}.html`
             ]);
 
             deployedAnything = true;
