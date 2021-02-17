@@ -4,6 +4,11 @@ const noopStream = require('stream-blackhole')();
 
 (async () => {
     try {
+        // Pipeline can only be executed on an underlying branch in order to perform
+        // versioning
+        if (!process.env.GITHUB_REF || !process.env.GITHUB_REF.match(/^refs\/heads\//)) {
+            throw new Exception("No git branch given via process.env.GITHUB_REF");
+        }
 
         // Define some parameters
         const container = core.getInput('container', {required: true});
