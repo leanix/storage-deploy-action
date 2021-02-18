@@ -93,6 +93,7 @@ const git = __nccwpck_require__(907)();
                     '--sort', '-v:refname'
                 ]
             );
+            core.info(`Received allVersionTags: ${allVersionTagsString}`);
             
             if (allVersionTagsString.length > 0) {
                 // as commit is not yet tagged use the last version bumped up as the release version
