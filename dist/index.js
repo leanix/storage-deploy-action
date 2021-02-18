@@ -5,10 +5,14 @@ module.exports =
 /***/ 267:
 /***/ ((__unused_webpack_module, __unused_webpack_exports, __nccwpck_require__) => {
 
+const fs = __nccwpck_require__(747);
+const path = __nccwpck_require__(622);
 const core = __nccwpck_require__(712);
 const exec = __nccwpck_require__(892);
 const noopStream = __nccwpck_require__(497)();
 const git = __nccwpck_require__(907)();
+
+const filesToVersion = new Set(['index.html']);
 
 (async () => {
     try {
@@ -150,11 +154,20 @@ const git = __nccwpck_require__(907)();
                 '--recursive',
                 '--delete-destination', deleteDestination ? 'true' : 'false'
             ]);
-            // Store versioned index.html
-            await exec.exec('./azcopy', [
-                'cp', 'sourceDirectory/index.html',
-                `https://${storageAccount}.blob.core.windows.net/${container}/index_${releaseVersion}.html`
-            ]);
+            // Look for files to be versioned and upload them versioned
+            const directory = await fs.promises.opendir(sourceDirectory);
+            for await (const entry of directory) {
+                if (entry.isFile() && filesToVersion.has(entry.name)) {
+                    const filename = path.parse(entry.name).name;
+                    const extension = path.parse(entry.name).ext;
+                    core.info(`Creating versioned file for ${entry.name}.`);
+                    await exec.exec('./azcopy', [
+                        'cp', `sourceDirectory/${entry.name}`,
+                        `https://${storageAccount}.blob.core.windows.net/${container}/${filename}_${releaseVersion}.${extension}`,
+                        '--delete-destination', 'true'
+                    ]);
+                }
+            }
 
             deployedAnything = true;
 

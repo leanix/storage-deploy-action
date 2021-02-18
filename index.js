@@ -1,7 +1,11 @@
+const fs = require('fs');
+const path = require('path');
 const core = require('@actions/core');
 const exec = require('@actions/exec');
 const noopStream = require('stream-blackhole')();
 const git = require('simple-git/promise')();
+
+const filesToVersion = new Set(['index.html']);
 
 (async () => {
     try {
@@ -143,11 +147,20 @@ const git = require('simple-git/promise')();
                 '--recursive',
                 '--delete-destination', deleteDestination ? 'true' : 'false'
             ]);
-            // Store versioned index.html
-            await exec.exec('./azcopy', [
-                'cp', 'sourceDirectory/index.html',
-                `https://${storageAccount}.blob.core.windows.net/${container}/index_${releaseVersion}.html`
-            ]);
+            // Look for files to be versioned and upload them versioned
+            const directory = await fs.promises.opendir(sourceDirectory);
+            for await (const entry of directory) {
+                if (entry.isFile() && filesToVersion.has(entry.name)) {
+                    const filename = path.parse(entry.name).name;
+                    const extension = path.parse(entry.name).ext;
+                    core.info(`Creating versioned file for ${entry.name}.`);
+                    await exec.exec('./azcopy', [
+                        'cp', `sourceDirectory/${entry.name}`,
+                        `https://${storageAccount}.blob.core.windows.net/${container}/${filename}_${releaseVersion}.${extension}`,
+                        '--delete-destination', 'true'
+                    ]);
+                }
+            }
 
             deployedAnything = true;
 
