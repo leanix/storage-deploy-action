@@ -65,6 +65,7 @@ const git = require('simple-git/promise')();
         const normalisedBranch = branch.replace(/\W+/g, '-');
         const versionTagPrefix = 'VERSION-' + normalisedBranch.toUpperCase() + '-';
         const currentCommit = process.env.GITHUB_SHA;
+        await git.fetch(['--tags']); // Fetch all tags
         const tagsOfCurrentCommitString = await git.tag(
             [
                 '-l', versionTagPrefix + '*',
