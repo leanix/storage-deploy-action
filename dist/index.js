@@ -92,14 +92,12 @@ const filesToVersion = new Set(['index.html']);
             releaseVersion = parseInt(tagsOfCurrentCommit[0].replace(versionTagPrefix, ''));
             core.info(`Last commit is already tagged with version ${releaseVersion}`);
         } else {
-            core.info(`Fetching version tags with prefix ${versionTagPrefix}`);
             const allVersionTagsString = await git.tag(
                 [
                     '-l', versionTagPrefix + '*',
                     '--sort', '-v:refname'
                 ]
             );
-            core.info(`Received allVersionTags: ${allVersionTagsString}`);
             
             if (allVersionTagsString.length > 0) {
                 // as commit is not yet tagged use the last version bumped up as the release version
