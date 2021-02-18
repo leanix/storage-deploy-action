@@ -149,7 +149,7 @@ const git = __nccwpck_require__(907)();
             ]);
             // Store versioned index.html
             await exec.exec('./azcopy', [
-                'sync', 'sourceDirectory/index.html',
+                'cp', 'sourceDirectory/index.html',
                 `https://${storageAccount}.blob.core.windows.net/${container}/index_${releaseVersion}.html`
             ]);
 
