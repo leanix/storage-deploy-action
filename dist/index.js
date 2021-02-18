@@ -71,6 +71,7 @@ const git = __nccwpck_require__(907)();
         const branch = process.env.GITHUB_REF.replace(/^refs\/heads\//, '');
         const normalisedBranch = branch.replace(/\W+/g, '-');
         const versionTagPrefix = 'VERSION-' + normalisedBranch.toUpperCase() + '-';
+        const currentCommit = process.env.GITHUB_SHA;
         const tagsOfCurrentCommitString = await git.tag(
             [
                 '-l', versionTagPrefix + '*',
