@@ -162,7 +162,7 @@ const filesToVersion = new Set(['index.html']);
                     const extension = path.parse(entry.name).ext;
                     core.info(`Creating versioned file for ${entry.name}.`);
                     await exec.exec('./azcopy', [
-                        'cp', `sourceDirectory/${entry.name}`,
+                        'cp', `${sourceDirectory}/${entry.name}`,
                         `https://${storageAccount}.blob.core.windows.net/${container}/${filename}_${releaseVersion}.${extension}`
                     ]);
                 }
