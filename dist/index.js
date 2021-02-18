@@ -87,6 +87,7 @@ const git = __nccwpck_require__(907)();
             releaseVersion = parseInt(tagsOfCurrentCommit[0].replace(versionTagPrefix, ''));
             core.info(`Last commit is already tagged with version ${releaseVersion}`);
         } else {
+            core.info(`Fetching version tags with prefix ${versionTagPrefix}`);
             const allVersionTagsString = await git.tag(
                 [
                     '-l', versionTagPrefix + '*',
