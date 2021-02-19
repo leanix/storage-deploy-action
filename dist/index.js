@@ -12,6 +12,8 @@ const exec = __nccwpck_require__(892);
 const noopStream = __nccwpck_require__(497)();
 const git = __nccwpck_require__(907)();
 
+const filesToVersion = new Set(['index.html']);
+
 (async () => {
     try {
         // Pipeline can only be executed on an underlying branch in order to perform
@@ -107,7 +109,6 @@ const git = __nccwpck_require__(907)();
             await git.tag([releaseVersionTag, process.env.GITHUB_REF]);
             await git.pushTags();
         }
-        const versionedDirectory = `v${releaseVersion}`;
 
         for (currentRegionMap of availableRegions) {
             const currentRegion = currentRegionMap.region;
@@ -151,13 +152,19 @@ const git = __nccwpck_require__(907)();
                 '--recursive',
                 '--delete-destination', deleteDestination ? 'true' : 'false'
             ]);
-            // Version all files in a versioned directory
-            await exec.exec('./azcopy', [
-                'sync', sourceDirectory,
-                `https://${storageAccount}.blob.core.windows.net/${container}/${versionedDirectory}`,
-                '--recursive',
-                '--delete-destination', 'true'
-            ]);
+            // Look for files to be versioned and upload them versioned
+            const directory = await fs.promises.opendir(sourceDirectory);
+            for await (const entry of directory) {
+                if (entry.isFile() && filesToVersion.has(entry.name)) {
+                    const filename = path.parse(entry.name).name;
+                    const extension = path.parse(entry.name).ext;
+                    core.info(`Creating versioned file for ${entry.name}.`);
+                    await exec.exec('./azcopy', [
+                        'cp', `${sourceDirectory}/${entry.name}`,
+                        `https://${storageAccount}.blob.core.windows.net/${container}/${filename}_${releaseVersion}${extension}`
+                    ]);
+                }
+            }
 
             deployedAnything = true;
 
