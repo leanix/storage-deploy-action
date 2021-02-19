@@ -5,7 +5,7 @@ const exec = require('@actions/exec');
 const noopStream = require('stream-blackhole')();
 const git = require('simple-git/promise')();
 
-const filesToVersion = new Set(['index.html']);
+const filesToVersion = new Set(['index.html', 'main.js']);
 
 (async () => {
     try {
