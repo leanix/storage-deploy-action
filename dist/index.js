@@ -153,9 +153,10 @@ const git = __nccwpck_require__(907)();
             ]);
             // Version all files in a versioned directory
             await exec.exec('./azcopy', [
-                'cp', sourceDirectory,
+                'sync', sourceDirectory,
                 `https://${storageAccount}.blob.core.windows.net/${container}/${versionedDirectory}`,
-                '--recursive'
+                '--recursive',
+                '--delete-destination', 'true'
             ]);
 
             deployedAnything = true;

@@ -146,9 +146,10 @@ const git = require('simple-git/promise')();
             ]);
             // Version all files in a versioned directory
             await exec.exec('./azcopy', [
-                'cp', sourceDirectory,
+                'sync', sourceDirectory,
                 `https://${storageAccount}.blob.core.windows.net/${container}/${versionedDirectory}`,
-                '--recursive'
+                '--recursive',
+                '--delete-destination', 'true'
             ]);
 
             deployedAnything = true;
