@@ -28,6 +28,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
         const region = core.getInput('region') ? core.getInput('region') : '';
         const deleteDestination = (core.getInput('delete-destination') == 'true') ? true : false;
         const environment = core.getInput('environment') ? core.getInput('environment') : 'test';
+        const microfrontend = core.getInput('microfronted') ? core.getInput('microfrontend') : '';
         const onlyShowErrorsExecOptions = {outStream: noopStream, errStream: process.stderr};
         const availableRegions = [
             {region:'westeurope',short:'eu'},
@@ -153,15 +154,17 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                 '--delete-destination', deleteDestination ? 'true' : 'false'
             ]);
             // Look for files to be versioned and upload them versioned
+            const releaseVersionIdentifier = `${microfrontend !== '' ? microfrontend + '_' : ''}${releaseVersion}`;
             const directory = await fs.promises.opendir(sourceDirectory);
             for await (const entry of directory) {
                 if (entry.isFile() && filesToVersion.has(entry.name)) {
                     const filename = path.parse(entry.name).name;
                     const extension = path.parse(entry.name).ext;
-                    core.info(`Creating versioned file for ${entry.name}.`);
+                    const versionedFilename = `${filename}_${releaseVersionIdentifier}${extension}`;
+                    core.info(`Creating versioned file ${versionedFilename} for ${entry.name}.`);
                     await exec.exec('./azcopy', [
                         'cp', `${sourceDirectory}/${entry.name}`,
-                        `https://${storageAccount}.blob.core.windows.net/${container}/${filename}_${releaseVersion}${extension}`
+                        `https://${storageAccount}.blob.core.windows.net/${container}/${versionedFilename}`
                     ]);
                 }
             }
