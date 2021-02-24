@@ -79,7 +79,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
             ]
         );
 
-        let releaseVersion = 0;
+        let releaseVersion = 1;
         if (tagsOfCurrentCommitString.length > 0) {
             // commit is already tagged, so use that tag as the release version 
             const tagsOfCurrentCommit = tagsOfCurrentCommitString.split('\n');
