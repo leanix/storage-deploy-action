@@ -28,7 +28,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
         const region = core.getInput('region') ? core.getInput('region') : '';
         const deleteDestination = (core.getInput('delete-destination') == 'true') ? true : false;
         const environment = core.getInput('environment') ? core.getInput('environment') : 'test';
-        const microfrontend = core.getInput('microfronted') ? core.getInput('microfrontend') : '';
+        const microfrontend = core.getInput('microfrontend') ? core.getInput('microfrontend') : '';
         const onlyShowErrorsExecOptions = {outStream: noopStream, errStream: process.stderr};
         const availableRegions = [
             {region:'westeurope',short:'eu'},
