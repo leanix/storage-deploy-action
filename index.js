@@ -68,7 +68,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
 
         const branch = process.env.GITHUB_REF.replace(/^refs\/heads\//, '');
         const normalisedBranch = branch.replace(/\W+/g, '-');
-        const versionTagPrefix = 'VERSION-' + normalisedBranch.toUpperCase() + '-';
+        const versionTagPrefix = 'VERSION-' + microfrontend + microfrontend !== '' ? '-' : '' + normalisedBranch.toUpperCase() + '-';
         const currentCommit = process.env.GITHUB_SHA;
         await git.fetch(['--tags']); // Fetch all tags
         const tagsOfCurrentCommitString = await git.tag(
