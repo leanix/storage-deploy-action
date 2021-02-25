@@ -22,6 +22,7 @@ jobs:
       - name: Use storage deploy action
         uses: ./
         with:
+          branch: ${{ steps.extract-branch.outputs.branch }}
           source-directory: test
           container: storage-deploy-action-public
           environment: test
