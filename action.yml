@@ -1,6 +1,9 @@
 name: 'LeanIX Storage Deployment'
 description: 'Deploy files to blob storage'
 inputs:
+  branch:
+    description: 'Name of the branch that you want to deploy'
+    required: true
   container:
     description: 'Name of the storage container to deploy to'
     required: true

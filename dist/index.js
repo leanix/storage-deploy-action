@@ -16,13 +16,8 @@ const filesToVersion = new Set(['index.html', 'main.js']);
 
 (async () => {
     try {
-        // Pipeline can only be executed on an underlying branch in order to perform
-        // versioning
-        if (!process.env.GITHUB_REF || !process.env.GITHUB_REF.match(/^refs\/heads\//)) {
-            throw new Exception("No git branch given via process.env.GITHUB_REF");
-        }
-
         // Define some parameters
+        const branch = core.getInput('branch', {require: true});
         const container = core.getInput('container', {required: true});
         const sourceDirectory = core.getInput('source-directory', {required: true});
         const region = core.getInput('region') ? core.getInput('region') : '';
@@ -73,7 +68,6 @@ const filesToVersion = new Set(['index.html', 'main.js']);
 
         let deployedAnything = false;
 
-        const branch = process.env.GITHUB_REF.replace(/^refs\/heads\//, '');
         const normalisedBranch = branch.replace(/\W+/g, '-');
         const versionTagPrefix = 'VERSION-' + (microfrontend !== '' ? microfrontend.toUpperCase() + '-' : '') + normalisedBranch.toUpperCase() + '-';
         const currentCommit = process.env.GITHUB_SHA;

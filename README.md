@@ -7,6 +7,7 @@ This very opinionated Github Action helps you to deploy static files to Azure Bl
 ```
 uses: leanix/storage-deploy-action@master
 with:
+  branch: develop                   # Name of the branch that should be deployed
   container: foo-public             # Name of the storage container to deploy to
   source-directory: dist/           # Directory containing the files to deploy
   environment: prod                 # Optional, environment to deploy to, defaults to 'test'

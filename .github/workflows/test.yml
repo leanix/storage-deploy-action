@@ -13,6 +13,11 @@ jobs:
         uses: leanix/secrets-action@master
         with:
           secret-store-credentials: ${{ secrets.INJECTED_SECRET_STORE_CREDENTIALS }}
+      
+      - name: Extract branch name
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: extract-branch
 
       - name: Use storage deploy action
         uses: ./
@@ -24,6 +29,7 @@ jobs:
       - name: Use storage deploy action for deploying a microfrontend
         uses: ./
         with:
+          branch: ${{ steps.extract-branch.outputs.branch }}
           source-directory: test
           container: storage-deploy-action-public
           environment: test
@@ -32,6 +38,7 @@ jobs:
       - name: Use storage deploy action with region option
         uses: ./
         with:
+          branch: ${{ steps.extract-branch.outputs.branch }}
           source-directory: test
           container: storage-deploy-action-public
           environment: test
@@ -41,6 +48,7 @@ jobs:
         uses: ./
         continue-on-error: true
         with:
+          branch: ${{ steps.extract-branch.outputs.branch }}
           source-directory: test
           container: storage-deploy-action-public
           environment: test
@@ -50,6 +58,7 @@ jobs:
         uses: ./
         continue-on-error: true
         with:
+          branch: ${{ steps.extract-branch.outputs.branch }}
           source-directory: test
           container: foobar
 
@@ -57,6 +66,7 @@ jobs:
         uses: ./
         continue-on-error: true
         with:
+          branch: ${{ steps.extract-branch.outputs.branch }}
           source-directory: test
           container: storage-deploy-action-unknown
 
@@ -64,6 +74,7 @@ jobs:
         uses: ./
         continue-on-error: true
         with:
+          branch: ${{ steps.extract-branch.outputs.branch }}
           source-directory: test
           container: storage-deploy-action-public
           region: foobar
@@ -72,6 +83,14 @@ jobs:
         uses: ./
         continue-on-error: true
         with:
+          branch: ${{ steps.extract-branch.outputs.branch }}
           source-directory: test
           container: storage-deploy-action-public
           environment: foobar
+      
+      - name: Should fail because no branch provided
+        uses: ./
+        continue-on-error: true
+        with:
+          source-directory: test
+          container: storage-deploy-action-public
