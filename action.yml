@@ -20,10 +20,6 @@ inputs:
     description: 'Delete files on destination if they no longer exist in the source'
     default: 'true'
     required: false
-  microfrontend:
-    description: 'Name of microfrontend if a microfrontend from a monorepo is supposed to be deployed'
-    default: ''
-    required: false
 runs:
   using: 'node12'
   main: 'dist/index.js'
