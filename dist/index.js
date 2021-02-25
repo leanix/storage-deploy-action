@@ -17,7 +17,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
 (async () => {
     try {
         // Define some parameters
-        const branch = core.getInput('branch', {require: true});
+        const branch = core.getInput('branch', {required: true});
         const container = core.getInput('container', {required: true});
         const sourceDirectory = core.getInput('source-directory', {required: true});
         const region = core.getInput('region') ? core.getInput('region') : '';
