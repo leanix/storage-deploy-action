@@ -147,13 +147,12 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                 '--delete-destination', deleteDestination ? 'true' : 'false'
             ]);
             // Look for files to be versioned and upload them versioned
-            const releaseVersionIdentifier = `${microfrontend !== '' ? microfrontend + '_' : ''}${releaseVersion}`;
             const directory = await fs.promises.opendir(sourceDirectory);
             for await (const entry of directory) {
                 if (entry.isFile() && filesToVersion.has(entry.name)) {
                     const filename = path.parse(entry.name).name;
                     const extension = path.parse(entry.name).ext;
-                    const versionedFilename = `${filename}_${releaseVersionIdentifier}${extension}`;
+                    const versionedFilename = `${filename}_${releaseVersion}${extension}`;
                     core.info(`Creating versioned file ${versionedFilename} for ${entry.name}.`);
                     await exec.exec('./azcopy', [
                         'cp', `${sourceDirectory}/${entry.name}`,
