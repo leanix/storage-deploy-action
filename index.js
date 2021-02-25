@@ -1,9 +1,19 @@
+const fs = require('fs');
+const path = require('path');
 const core = require('@actions/core');
 const exec = require('@actions/exec');
 const noopStream = require('stream-blackhole')();
+const git = require('simple-git/promise')();
+
+const filesToVersion = new Set(['index.html', 'main.js']);
 
 (async () => {
     try {
+        // Pipeline can only be executed on an underlying branch in order to perform
+        // versioning
+        if (!process.env.GITHUB_REF || !process.env.GITHUB_REF.match(/^refs\/heads\//)) {
+            throw new Exception("No git branch given via process.env.GITHUB_REF");
+        }
 
         // Define some parameters
         const container = core.getInput('container', {required: true});
@@ -11,6 +21,7 @@ const noopStream = require('stream-blackhole')();
         const region = core.getInput('region') ? core.getInput('region') : '';
         const deleteDestination = (core.getInput('delete-destination') == 'true') ? true : false;
         const environment = core.getInput('environment') ? core.getInput('environment') : 'test';
+        const microfrontend = core.getInput('microfrontend') ? core.getInput('microfrontend') : '';
         const onlyShowErrorsExecOptions = {outStream: noopStream, errStream: process.stderr};
         const availableRegions = [
             {region:'westeurope',short:'eu'},
@@ -55,6 +66,44 @@ const noopStream = require('stream-blackhole')();
 
         let deployedAnything = false;
 
+        const branch = process.env.GITHUB_REF.replace(/^refs\/heads\//, '');
+        const normalisedBranch = branch.replace(/\W+/g, '-');
+        const versionTagPrefix = 'VERSION-' + (microfrontend !== '' ? microfrontend.toUpperCase() + '-' : '') + normalisedBranch.toUpperCase() + '-';
+        const currentCommit = process.env.GITHUB_SHA;
+        await git.fetch(['--tags']); // Fetch all tags
+        const tagsOfCurrentCommitString = await git.tag(
+            [
+                '-l', versionTagPrefix + '*',
+                '--points-at', currentCommit,
+                '--sort', '-v:refname'
+            ]
+        );
+
+        let releaseVersion = 1;
+        if (tagsOfCurrentCommitString.length > 0) {
+            // commit is already tagged, so use that tag as the release version 
+            const tagsOfCurrentCommit = tagsOfCurrentCommitString.split('\n');
+            releaseVersion = parseInt(tagsOfCurrentCommit[0].replace(versionTagPrefix, ''));
+            core.info(`Last commit is already tagged with version ${releaseVersion}`);
+        } else {
+            const allVersionTagsString = await git.tag(
+                [
+                    '-l', versionTagPrefix + '*',
+                    '--sort', '-v:refname'
+                ]
+            );
+            
+            if (allVersionTagsString.length > 0) {
+                // as commit is not yet tagged use the last version bumped up as the release version
+                const allVersionTags = allVersionTagsString.split('\n');
+                releaseVersion = parseInt(allVersionTags[0].replace(versionTagPrefix, '')) + 1;
+            } 
+            core.info(`Next version on branch ${branch} is ${releaseVersion}`);
+            const releaseVersionTag = `${versionTagPrefix}${releaseVersion}`;
+            await git.tag([releaseVersionTag, process.env.GITHUB_REF]);
+            await git.pushTags();
+        }
+
         for (currentRegionMap of availableRegions) {
             const currentRegion = currentRegionMap.region;
             if (region && (region != currentRegion)) {
@@ -97,6 +146,21 @@ const noopStream = require('stream-blackhole')();
                 '--recursive',
                 '--delete-destination', deleteDestination ? 'true' : 'false'
             ]);
+            // Look for files to be versioned and upload them versioned
+            const releaseVersionIdentifier = `${microfrontend !== '' ? microfrontend + '_' : ''}${releaseVersion}`;
+            const directory = await fs.promises.opendir(sourceDirectory);
+            for await (const entry of directory) {
+                if (entry.isFile() && filesToVersion.has(entry.name)) {
+                    const filename = path.parse(entry.name).name;
+                    const extension = path.parse(entry.name).ext;
+                    const versionedFilename = `${filename}_${releaseVersionIdentifier}${extension}`;
+                    core.info(`Creating versioned file ${versionedFilename} for ${entry.name}.`);
+                    await exec.exec('./azcopy', [
+                        'cp', `${sourceDirectory}/${entry.name}`,
+                        `https://${storageAccount}.blob.core.windows.net/${container}/${versionedFilename}`
+                    ]);
+                }
+            }
 
             deployedAnything = true;
 
