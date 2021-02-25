@@ -20,14 +20,6 @@ jobs:
           source-directory: test
           container: storage-deploy-action-public
           environment: test
-      
-      - name: Use storage deploy action for deploying a microfrontend
-        uses: ./
-        with:
-          source-directory: test
-          container: storage-deploy-action-public
-          environment: test
-          microfrontend: test-microfrontend
 
       - name: Use storage deploy action with region option
         uses: ./

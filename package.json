@@ -16,7 +16,6 @@
   "dependencies": {
     "@actions/core": "1.2.6",
     "@actions/exec": "1.0.3",
-    "stream-blackhole": "1.0.3",
-    "simple-git": "^1.132.0"
+    "stream-blackhole": "1.0.3"
   }
 }
