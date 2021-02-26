@@ -66,17 +66,29 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                 throw new Error('No version specified to rollback to!')
             }
 
-            for (let file of filesToVersion) {
-                const filename = path.parse(file).name;
-                const extension = path.parse(file).ext;
-                await exec.exec('./azcopy', [
-                    'cp',
-                    `https://${storageAccount}.blob.core.windows.net/${container}/${filename}_${rollbackVersion}${extension}`,
-                    `https://${storageAccount}.blob.core.windows.net/${container}/${file}`,
-                    '--overwrite', 'true'
-                ]);
-            }
+            for (currentRegionMap of availableRegions) {
+                const currentRegion = currentRegionMap.region;
+                if (region && (region != currentRegion)) {
+                    core.info(`Not rolling back region ${currentRegion}...`);
+                    continue;
+                }
 
+                let storageAccount = `leanix${currentRegion}${environment}`;
+                if (storageAccount.length > 24) {
+                    storageAccount = `leanix${currentRegionMap.short}${environment}`;
+                }
+                core.info(`Rolling back region ${currentRegion}.`)
+                for (let file of filesToVersion) {
+                    const filename = path.parse(file).name;
+                    const extension = path.parse(file).ext;
+                    await exec.exec('./azcopy', [
+                        'cp',
+                        `https://${storageAccount}.blob.core.windows.net/${container}/${filename}_${rollbackVersion}${extension}`,
+                        `https://${storageAccount}.blob.core.windows.net/${container}/${file}`,
+                        '--overwrite', 'true'
+                    ]);
+                }
+            }
             return; // End action
         }
 
