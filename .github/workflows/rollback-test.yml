@@ -28,7 +28,7 @@ jobs:
           environment: test
           region: westeurope
           microfrontend: test-microfrontend
-          id: initial-deployment 
+        id: initial-deployment 
 
       - name: Show deployed index.html and main.js
         shell: bash
@@ -46,7 +46,7 @@ jobs:
           environment: test
           region: westeurope
           microfrontend: test-microfronted
-          id: breaking-change-deployment
+        id: breaking-change-deployment
 
       - name: Show deployed index.html and main.js with breaking change
         shell: bash
