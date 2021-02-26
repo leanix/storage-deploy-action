@@ -1,0 +1,77 @@
+name: Test rollback mode
+on: [push]
+
+jobs:
+  test:
+    name: Test Rollback Mode
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Get credentials
+        uses: leanix/secrets-action@master
+        with:
+          secret-store-credentials: ${{ secrets.INJECTED_SECRET_STORE_CREDENTIALS }}
+
+      - name: Extract branch name
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: extract-branch
+
+      - name: Deploy a microfrontend
+        uses: ./
+        with:
+          branch: ${{ steps.extract-branch.outputs.branch }}
+          source-directory: test
+          container: storage-deploy-action-public
+          environment: test
+          region: westeurope
+          microfrontend: test-microfrontend
+          id: initial-deployment 
+
+      - name: Show deployed index.html and main.js
+        shell: bash
+        run: curl https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/index.html && curl https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/main.js
+
+      - name: Modify the microfrontend by introducing a breaking change
+        run: python ./.github/workflows/introduce_breaking_change.py
+
+      - name: Deploy new version
+        uses: ./
+        with:
+          branch: ${{ steps.extract-branch.outputs.branch }}
+          source-directory: test
+          container: storage-deploy-action-public
+          environment: test
+          region: westeurope
+          microfrontend: test-microfronted
+          id: breaking-change-deployment
+
+      - name: Show deployed index.html and main.js with breaking change
+        shell: bash
+        run: curl https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/index.html && curl https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/main.js
+
+      - name: Rollback the breaking change deployment to the initial deployed version
+        uses: ./
+        with:
+          branch: ${{ steps.extract-branch.outputs.branch }}
+          source-directory: test
+          container: storage-deploy-action-public
+          environment: test
+          rollback-mode: true
+          rollback-version: ${{ steps.initial-deployment.outputs.version }}
+
+      - name: Show rolled back index.html and main.js
+        shell: bash
+        run: curl https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/index.html && curl https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/main.js
+
+      - name: Verify that rollback fails, if no rollback-version specified
+        uses: ./
+        continue-on-error: true
+        with:
+          branch: ${{ steps.extract-branch.outputs.branch }}
+          source-directory: test
+          container: storage-deploy-action-public
+          environment: test
+          rollback-mode: true

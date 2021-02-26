@@ -24,6 +24,8 @@ const filesToVersion = new Set(['index.html', 'main.js']);
         const deleteDestination = (core.getInput('delete-destination') == 'true') ? true : false;
         const environment = core.getInput('environment') ? core.getInput('environment') : 'test';
         const microfrontend = core.getInput('microfrontend') ? core.getInput('microfrontend') : '';
+        const inRollbackMode = (core.getInput('rollback-mode') === 'true') ? true : false;
+        const rollbackVersion = core.getInput('rollback-version') ? core.getInput('rollback-version') : '';
         const onlyShowErrorsExecOptions = {outStream: noopStream, errStream: process.stderr};
         const availableRegions = [
             {region:'westeurope',short:'eu'},
@@ -65,6 +67,25 @@ const filesToVersion = new Set(['index.html', 'main.js']);
             '--password', process.env.ARM_CLIENT_SECRET,
             '--tenant', process.env.ARM_TENANT_ID
         ], onlyShowErrorsExecOptions);
+
+        if (inRollbackMode) {
+            if (rollbackVersion.length <= 0) {
+                throw new Error('No version specified to rollback to!')
+            }
+
+            for (let file of filesToVersion) {
+                const filename = path.parse(file).name;
+                const extension = path.parse(file).ext;
+                await exec.exec('./azcopy', [
+                    'cp',
+                    `https://${storageAccount}.blob.core.windows.net/${container}/${filename}_${rollbackVersion}${extension}`,
+                    `https://${storageAccount}.blob.core.windows.net/${container}/${file}`,
+                    '--overwrite', 'true'
+                ]);
+            }
+
+            return; // End action
+        }
 
         let deployedAnything = false;
 
