@@ -27,6 +27,9 @@ inputs:
     description: 'Name of microfrontend if a microfrontend from a monorepo is supposed to be deployed'
     default: ''
     required: false
+outputs:
+  version:
+    description: 'The deployed version'
 runs:
   using: 'node12'
   main: 'dist/index.js'

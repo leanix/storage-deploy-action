@@ -167,7 +167,9 @@ const filesToVersion = new Set(['index.html', 'main.js']);
             core.info(`Finished deploying to region ${currentRegion}.`);
         }
 
-        if (!deployedAnything) {
+        if (deployedAnything) {
+            core.setOutput('version', releaseVersion);
+        } else {
             throw new Error('Cound not find any container to deploy to!');
         }
     } catch (e) {
