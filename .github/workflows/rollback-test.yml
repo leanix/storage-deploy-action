@@ -59,6 +59,7 @@ jobs:
           source-directory: test
           container: storage-deploy-action-public
           environment: test
+          region: westeurope
           rollback-mode: true
           rollback-version: ${{ steps.initial-deployment.outputs.version }}
 
