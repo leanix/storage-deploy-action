@@ -17,12 +17,12 @@ const filesToVersion = new Set(['index.html', 'main.js']);
 (async () => {
     try {
         // Define some parameters
-        const branch = core.getInput('branch', {required: true});
         const container = core.getInput('container', {required: true});
-        const sourceDirectory = core.getInput('source-directory', {required: true});
+        const sourceDirectory = core.getInput('source-directory') ? core.getInput('source-directory') : '';
         const region = core.getInput('region') ? core.getInput('region') : '';
         const deleteDestination = (core.getInput('delete-destination') == 'true') ? true : false;
         const environment = core.getInput('environment') ? core.getInput('environment') : 'test';
+        const branch = core.getInput('branch') ? core.getInput('branch') : '';
         const microfrontend = core.getInput('microfrontend') ? core.getInput('microfrontend') : '';
         const inRollbackMode = (core.getInput('rollback-mode') === 'true') ? true : false;
         const rollbackVersion = core.getInput('rollback-version') ? core.getInput('rollback-version') : '';
@@ -107,6 +107,9 @@ const filesToVersion = new Set(['index.html', 'main.js']);
 
         let deployedAnything = false;
 
+        if (branch.length <= 0) {
+            throw new Error('Please specify a branch name when using this action to deploy a branch.');
+        }
         const normalisedBranch = branch.replace(/\W+/g, '-');
         const versionTagPrefix = 'VERSION-' + (microfrontend !== '' ? microfrontend.toUpperCase() + '-' : '') + normalisedBranch.toUpperCase() + '-';
         const currentCommit = process.env.GITHUB_SHA;
@@ -179,6 +182,9 @@ const filesToVersion = new Set(['index.html', 'main.js']);
 
             core.info(`Now deploying to region ${currentRegion}!`);
 
+            if (sourceDirectory.length <= 0) {
+                throw new Error('Please specify a source directory when using this action for deployments.');
+            }
             // Sync directory
             await exec.exec('./azcopy', [
                 'sync', sourceDirectory,

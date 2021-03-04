@@ -70,6 +70,13 @@ jobs:
           branch: ${{ steps.extract-branch.outputs.branch }}
           source-directory: test
           container: storage-deploy-action-unknown
+      
+      - name: Should fail because of missing source directory
+        uses: ./
+        continue-on-error: true
+        with:
+          branch: ${{ steps.extract-branch.outputs.branch }}
+          container: storage-deploy-action-public
 
       - name: Should fail because of invalid region
         uses: ./

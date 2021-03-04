@@ -55,8 +55,6 @@ jobs:
       - name: Rollback the breaking change deployment to the initial deployed version
         uses: ./
         with:
-          branch: ${{ steps.extract-branch.outputs.branch }}
-          source-directory: test
           container: storage-deploy-action-public
           environment: test
           region: westeurope

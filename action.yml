@@ -1,16 +1,13 @@
 name: 'LeanIX Storage Deployment'
 description: 'Deploy files to blob storage'
 inputs:
-  branch:
-    description: 'Name of the branch that you want to deploy'
-    required: true
   container:
     description: 'Name of the storage container to deploy to'
     required: true
   source-directory:
     description: 'Directory containing the files to deploy'
-    default: '.'
-    required: true
+    default: ''
+    required: false 
   environment:
     description: 'Environment to deploy to'
     default: 'test'
@@ -23,6 +20,10 @@ inputs:
     description: 'Delete files on destination if they no longer exist in the source'
     default: 'true'
     required: false
+  branch:
+    description: 'Name of the branch that you want to deploy'
+    default: ''
+    required: false 
   microfrontend:
     description: 'Name of microfrontend if a microfrontend from a monorepo is supposed to be deployed'
     default: ''
