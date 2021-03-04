@@ -81,18 +81,22 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                 for (let file of filesToVersion) {
                     const filename = path.parse(file).name;
                     const extension = path.parse(file).ext;
-                    // Download versioned file
-                    await exec.exec('./azcopy', [
-                        'cp',
-                        `https://${storageAccount}.blob.core.windows.net/${container}/${filename}_${rollbackVersion}${extension}`,
-                        `rollback/${filename}_${rollbackVersion}${extension}`
-                    ]);
-                    // Upload versioned file as unversioned file
-                    await exec.exec('./azcopy', [
-                        'sync', `rollback/${filename}_${rollbackVersion}${extension}`,
-                        `https://${storageAccount}.blob.core.windows.net/${container}/${file}`,
-                        '--delete-destination', 'true'
-                    ]);
+                    try {
+                        // Download versioned file
+                        await exec.exec('./azcopy', [
+                            'cp',
+                            `https://${storageAccount}.blob.core.windows.net/${container}/${filename}_${rollbackVersion}${extension}`,
+                            `rollback/${filename}_${rollbackVersion}${extension}`
+                        ]);
+                        // Upload versioned file as unversioned file
+                        await exec.exec('./azcopy', [
+                            'sync', `rollback/${filename}_${rollbackVersion}${extension}`,
+                            `https://${storageAccount}.blob.core.windows.net/${container}/${file}`,
+                            '--delete-destination', 'true'
+                        ]);
+                    } catch (e) {
+                        core.info(`File ${file}_${rollbackVersion}${extension} does not exist in container`);
+                    }
                 }
             }
             return; // End action
