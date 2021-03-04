@@ -84,6 +84,14 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                 if (storageAccount.length > 24) {
                     storageAccount = `leanix${currentRegionMap.short}${environment}`;
                 }
+                const exitCode = await exec.exec('az', [
+                    'storage', 'account', 'show',
+                    '--name', storageAccount
+                ], {ignoreReturnCode: true, silent: true});
+                if (exitCode > 0) {
+                    core.info(`Not rolling back region ${currentRegion} because no storage account named ${storageAccount} exists.`);
+                    continue;
+                }
                 core.info(`Rolling back region ${currentRegion}.`)
                 for (let file of filesToVersion) {
                     const filename = path.parse(file).name;
