@@ -95,7 +95,8 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                             '--delete-destination', 'true'
                         ]);
                     } catch (e) {
-                        core.info(`File ${file}_${rollbackVersion}${extension} does not exist in container`);
+                        core.info(`File ${filename}_${rollbackVersion}${extension} does not exist in container`);
+                        continue;
                     }
                 }
             }
