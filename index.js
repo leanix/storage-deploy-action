@@ -88,12 +88,20 @@ const noopStream = require('stream-blackhole')();
                 continue;
             }
 
-            core.info(`Now deploying to region ${currentRegion}!`);
-
-            // Sync directory
+            // Sync directory to Azure Blob Storage
+            core.info(`Now deploying to Azure Blob Storage. region: ${currentRegion}`);
             await exec.exec('./azcopy', [
                 'sync', sourceDirectory,
                 `https://${storageAccount}.blob.core.windows.net/${container}/`,
+                '--recursive',
+                '--delete-destination', deleteDestination ? 'true' : 'false'
+            ]);
+
+             // Sync directory to Azure File Storage
+             core.info(`Now deploying to Azure File Storage. region: ${currentRegion}`);
+             await exec.exec('./azcopy', [
+                'sync', sourceDirectory,
+                `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}/`,
                 '--recursive',
                 '--delete-destination', deleteDestination ? 'true' : 'false'
             ]);
