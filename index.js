@@ -97,13 +97,12 @@ const noopStream = require('stream-blackhole')();
                 '--delete-destination', deleteDestination ? 'true' : 'false'
             ]);
 
-             // Sync directory to Azure File Storage
+             // Copy directory to Azure File Storage
              core.info(`Now deploying to Azure File Storage. region: ${currentRegion}`);
              await exec.exec('./azcopy', [
-                'sync', sourceDirectory,
+                'copy', sourceDirectory,
                 `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}/`,
-                '--recursive',
-                '--delete-destination', deleteDestination ? 'true' : 'false'
+                '--recursive'
             ]);
 
             deployedAnything = true;
