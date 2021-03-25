@@ -1,6 +1,7 @@
 const core = require('@actions/core');
 const exec = require('@actions/exec');
 const noopStream = require('stream-blackhole')();
+const moment = require('moment');
 
 (async () => {
     try {
@@ -52,7 +53,7 @@ const noopStream = require('stream-blackhole')();
             '--password', process.env.ARM_CLIENT_SECRET,
             '--tenant', process.env.ARM_TENANT_ID
         ], onlyShowErrorsExecOptions);
-
+        
         let deployedAnything = false;
 
         for (currentRegionMap of availableRegions) {
@@ -97,11 +98,26 @@ const noopStream = require('stream-blackhole')();
                 '--delete-destination', deleteDestination ? 'true' : 'false'
             ]);
 
+            // Fetch SAS token
+            let expires = moment().utc().add(2, 'hours').format();
+            let sasResponse = '';
+            await exec.exec('az', [
+                'storage', 'account', 'generate-sas',
+                '--expiry', expires,
+                '--permissions', 'acuw',
+                '--account-name', storageAccount,
+                '--resource-types', 'o',
+                '--services', 'f',
+                '--https-only',
+                '-o', 'json'
+            ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => sasResponse += data}});
+            let sasToken = JSON.parse(sasResponse);
+
              // Copy directory to Azure File Storage
              core.info(`Now deploying to Azure File Storage. region: ${currentRegion}`);
              await exec.exec('./azcopy', [
                 'copy', sourceDirectory,
-                `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}/`,
+                `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}?${sasToken}`,
                 '--recursive'
             ]);
 
