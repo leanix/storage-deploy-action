@@ -123,7 +123,7 @@ const moment = __nccwpck_require__(652);
              // Copy directory to Azure File Storage
              core.info(`Now deploying to Azure File Storage. region: ${currentRegion}`);
              await exec.exec('./azcopy', [
-                'copy', sourceDirectory,
+                'copy', sourceDirectory + '/*',
                 `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}?${sasToken}`,
                 '--recursive'
             ]);
