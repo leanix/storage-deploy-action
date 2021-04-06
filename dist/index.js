@@ -28,11 +28,11 @@ const filesToVersion = new Set(['index.html', 'main.js']);
         const rollbackVersion = core.getInput('rollback-version') ? core.getInput('rollback-version') : '';
         const onlyShowErrorsExecOptions = {outStream: noopStream, errStream: process.stderr};
         const availableRegions = [
-            {region:'westeurope',short:'eu'},
-            {region:'eastus',short:'us'},
-            {region:'canadacentral',short:'ca'},
-            {region:'australiaeast',short:'au'},
-            {region:'germanywestcentral',short:'de'}
+            {name:'westeurope',short:'eu'},
+            {name:'eastus',short:'us'},
+            {name:'canadacentral',short:'ca'},
+            {name:'australiaeast',short:'au'},
+            {name:'germanywestcentral',short:'de'}
         ];
 
         // Check environment
@@ -70,50 +70,15 @@ const filesToVersion = new Set(['index.html', 'main.js']);
 
         if (inRollbackMode) {
             if (rollbackVersion.length <= 0) {
-                throw new Error('No version specified to rollback to!')
+                throw new Error('No version specified for rollback!');
             }
-
-            for (currentRegionMap of availableRegions) {
-                const currentRegion = currentRegionMap.region;
-                if (region && (region != currentRegion)) {
-                    core.info(`Not rolling back region ${currentRegion}...`);
+            for (currentRegion of availableRegions) {
+                if (region && (region !== currentRegion.name)) {
+                    core.info(`Not rolling back region ${currentRegion.name}...`);
                     continue;
                 }
-
-                let storageAccount = `leanix${currentRegion}${environment}`;
-                if (storageAccount.length > 24) {
-                    storageAccount = `leanix${currentRegionMap.short}${environment}`;
-                }
-                const exitCode = await exec.exec('az', [
-                    'storage', 'account', 'show',
-                    '--name', storageAccount
-                ], {ignoreReturnCode: true, silent: true});
-                if (exitCode > 0) {
-                    core.info(`Not rolling back region ${currentRegion} because no storage account named ${storageAccount} exists.`);
-                    continue;
-                }
-                core.info(`Rolling back region ${currentRegion}.`)
-                for (let file of filesToVersion) {
-                    const filename = path.parse(file).name;
-                    const extension = path.parse(file).ext;
-                    try {
-                        // Download versioned file
-                        await exec.exec('./azcopy', [
-                            'cp',
-                            `https://${storageAccount}.blob.core.windows.net/${container}/${filename}_${rollbackVersion}${extension}`,
-                            `rollback/${filename}_${rollbackVersion}${extension}`
-                        ]);
-                        // Upload versioned file as unversioned file
-                        await exec.exec('./azcopy', [
-                            'sync', `rollback/${filename}_${rollbackVersion}${extension}`,
-                            `https://${storageAccount}.blob.core.windows.net/${container}/${file}`,
-                            '--delete-destination', 'true'
-                        ]);
-                    } catch (e) {
-                        core.info(`File ${filename}_${rollbackVersion}${extension} does not exist in container`);
-                        continue;
-                    }
-                }
+                const storageAccount = getStorageAccount(environment, currentRegion);
+                rollbackStorageAccount(storageAccount);
             }
             return; // End action
         }
@@ -161,7 +126,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
         }
 
         for (currentRegionMap of availableRegions) {
-            const currentRegion = currentRegionMap.region;
+            const currentRegion = currentRegionMap.name;
             if (region && (region != currentRegion)) {
                 core.info(`Not deploying to region ${currentRegion}...`);
                 continue;
@@ -234,6 +199,61 @@ const filesToVersion = new Set(['index.html', 'main.js']);
         core.setFailed(e.message);
     }
 })();
+
+/**
+ * Rolls back the microfrontend deployed on some storage account to a given version. 
+ * @param {*} storageAccount an identifier combing region and environment (e.g. leanixwesteuropetest)
+ * @param {*} version roll back to this version (e.g. 5) 
+ * @return if the rollback has been successfully finished
+ */
+async function rollbackStorageAccount(storageAccount, version) {
+    const exitCode = await exec.exec(
+        'az', 
+        ['storage', 'account', 'show', '--name', storageAccount],
+        {ignoreReturnCode: true, silent: true}
+    );
+    if (exitCode > 0) {
+        core.info(`Not rolling back ${storageAccount} because account does not exist.`);
+        return false;
+    }
+    core.info(`Rolling back ${storageAccount}.`)
+    for (let file of filesToVersion) {
+        const filename = path.parse(file).name;
+        const extension = path.parse(file).ext;
+        try {
+            // Download versioned file
+            await exec.exec('./azcopy', [
+                'cp',
+                `https://${storageAccount}.blob.core.windows.net/${container}/${filename}_${rollbackVersion}${extension}`,
+                `rollback/${filename}_${rollbackVersion}${extension}`
+            ]);
+            // Upload versioned file as unversioned file
+            await exec.exec('./azcopy', [
+                'sync', `rollback/${filename}_${rollbackVersion}${extension}`,
+                `https://${storageAccount}.blob.core.windows.net/${container}/${file}`,
+                '--delete-destination', 'true'
+            ]);
+        } catch (e) {
+            core.info(`File ${filename}_${rollbackVersion}${extension} does not exist in storage container.`);
+            continue;
+        }
+    }
+    return true;
+}
+
+/**
+ * Returns the name of the storage account (e.g. leanixwesteuropetest) which is a combination of the region
+ * and the environment.
+ * @param {*} environment either test or prod
+ * @param {*} region e.g. { name:'germanywestcentral', short:'de' }
+ */
+function getStorageAccount(environment, region) {
+    let storageAccount = `leanix${region.name}${environment}`;
+    if (storageAccount.length > 24) {
+        storageAccount = `leanix${region.short}${environment}`;
+    }
+    return storageAccount;
+}
 
 
 /***/ }),
