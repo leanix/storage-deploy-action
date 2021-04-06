@@ -68,7 +68,7 @@ jobs:
           received=$(curl -s https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/index.html && curl -s https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/main.js)
           if [[ $received != *"$expected"* ]]; then
             echo "::error ::Rollback has not been successful"
-            exit
+            exit 1
           fi
 
       - name: Verify that rollback fails, if no rollback-version specified
