@@ -86,7 +86,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                 deployedAnything = deployedAnything || hasDeployedFiles;
             }
             if (deployedAnything) {
-                core.setOutput('version', releaseVersion);
+                core.setOutput('version', version);
             } else {
                 throw new Error('Could not find any container to deploy to!');
             }
@@ -126,7 +126,7 @@ async function deployNewVersionToContainerOfStorageAccount(version, storageAccou
         return false;
     }
 
-    core.info(`Now deploying to region ${currentRegion}!`);
+    core.info(`Now deploying to ${storageAccount}!`);
 
     if (sourceDirectory.length <= 0) {
         throw new Error('Please specify a source directory when using this action for deployments.');
@@ -152,7 +152,7 @@ async function deployNewVersionToContainerOfStorageAccount(version, storageAccou
             ]);
         }
     }
-    core.info(`Finished deploying to region ${currentRegion}.`);
+    core.info(`Finished deploying to ${storageAccount}.`);
     return true;
 }
 
