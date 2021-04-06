@@ -83,7 +83,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
             return; // End action
         }
 
-        pushBranchVersionTagForMicrofrontend(branch, microfrontend);
+        const releaseVersion = pushBranchVersionTagForMicrofrontend(branch, microfrontend);
         let deployedAnything = false;
         for (currentRegionMap of availableRegions) {
             const currentRegion = currentRegionMap.name;
@@ -215,6 +215,12 @@ function getStorageAccount(environment, region) {
     return storageAccount;
 }
 
+/**
+ * Calculates the new branch version of the given microfrontend.
+ * @param {*} branch
+ * @param {*} microfrontend
+ * @returns The new version number
+ */
 async function pushBranchVersionTagForMicrofrontend(branch, microfrontend) {
     if (branch.length <= 0) {
         throw new Error('Please specify a branch name when using this action to deploy a branch.');
@@ -256,6 +262,8 @@ async function pushBranchVersionTagForMicrofrontend(branch, microfrontend) {
         await git.tag([releaseVersionTag, process.env.GITHUB_REF]);
         await git.pushTags();
     }
+    
+    return releaseVersion;
 }
 
 
