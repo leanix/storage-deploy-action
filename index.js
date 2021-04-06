@@ -76,48 +76,8 @@ const filesToVersion = new Set(['index.html', 'main.js']);
             return; // End action
         }
 
+        pushBranchVersionTagForMicrofrontend(branch, microfrontend);
         let deployedAnything = false;
-
-        if (branch.length <= 0) {
-            throw new Error('Please specify a branch name when using this action to deploy a branch.');
-        }
-        const normalisedBranch = branch.replace(/\W+/g, '-');
-        const versionTagPrefix = 'VERSION-' + (microfrontend !== '' ? microfrontend.toUpperCase() + '-' : '') + normalisedBranch.toUpperCase() + '-';
-        const currentCommit = process.env.GITHUB_SHA;
-        await git.fetch(['--tags']); // Fetch all tags
-        const tagsOfCurrentCommitString = await git.tag(
-            [
-                '-l', versionTagPrefix + '*',
-                '--points-at', currentCommit,
-                '--sort', '-v:refname'
-            ]
-        );
-
-        let releaseVersion = 1;
-        if (tagsOfCurrentCommitString.length > 0) {
-            // commit is already tagged, so use that tag as the release version 
-            const tagsOfCurrentCommit = tagsOfCurrentCommitString.split('\n');
-            releaseVersion = parseInt(tagsOfCurrentCommit[0].replace(versionTagPrefix, ''));
-            core.info(`Last commit is already tagged with version ${releaseVersion}`);
-        } else {
-            const allVersionTagsString = await git.tag(
-                [
-                    '-l', versionTagPrefix + '*',
-                    '--sort', '-v:refname'
-                ]
-            );
-            
-            if (allVersionTagsString.length > 0) {
-                // as commit is not yet tagged use the last version bumped up as the release version
-                const allVersionTags = allVersionTagsString.split('\n');
-                releaseVersion = parseInt(allVersionTags[0].replace(versionTagPrefix, '')) + 1;
-            } 
-            core.info(`Next version on branch ${branch} is ${releaseVersion}`);
-            const releaseVersionTag = `${versionTagPrefix}${releaseVersion}`;
-            await git.tag([releaseVersionTag, process.env.GITHUB_REF]);
-            await git.pushTags();
-        }
-
         for (currentRegionMap of availableRegions) {
             const currentRegion = currentRegionMap.name;
             if (region && (region != currentRegion)) {
@@ -246,4 +206,47 @@ function getStorageAccount(environment, region) {
         storageAccount = `leanix${region.short}${environment}`;
     }
     return storageAccount;
+}
+
+async function pushBranchVersionTagForMicrofrontend(branch, microfrontend) {
+    if (branch.length <= 0) {
+        throw new Error('Please specify a branch name when using this action to deploy a branch.');
+    }
+
+    const normalizedBranch = branch.replace(/\W+/g, '-');
+    const versionTagPrefix = 'VERSION-' + (microfrontend !== '' ? microfrontend.toUpperCase() + '-' : '') + normalizedBranch.toUpperCase() + '-';
+    const currentCommit = process.env.GITHUB_SHA;
+    await git.fetch(['--tags']); // Fetch all tags
+    const tagsOfCurrentCommitString = await git.tag(
+        [
+            '-l', versionTagPrefix + '*',
+            '--points-at', currentCommit,
+            '--sort', '-v:refname'
+        ]
+    );
+
+    let releaseVersion = 1;
+    if (tagsOfCurrentCommitString.length > 0) {
+        // commit is already tagged, so use that tag as the release version 
+        const tagsOfCurrentCommit = tagsOfCurrentCommitString.split('\n');
+        releaseVersion = parseInt(tagsOfCurrentCommit[0].replace(versionTagPrefix, ''));
+        core.info(`Last commit is already tagged with version ${releaseVersion}`);
+    } else {
+        const allVersionTagsString = await git.tag(
+            [
+                '-l', versionTagPrefix + '*',
+                '--sort', '-v:refname'
+            ]
+        );
+        
+        if (allVersionTagsString.length > 0) {
+            // as commit is not yet tagged use the last version bumped up as the release version
+            const allVersionTags = allVersionTagsString.split('\n');
+            releaseVersion = parseInt(allVersionTags[0].replace(versionTagPrefix, '')) + 1;
+        } 
+        core.info(`Next version on branch ${branch} is ${releaseVersion}`);
+        const releaseVersionTag = `${versionTagPrefix}${releaseVersion}`;
+        await git.tag([releaseVersionTag, process.env.GITHUB_REF]);
+        await git.pushTags();
+    }
 }
