@@ -61,9 +61,14 @@ jobs:
           rollback-mode: true
           rollback-version: ${{ steps.initial-deployment.outputs.version }}
 
-      - name: Show rolled back index.html and main.js
+      - name: Test if rollback of index.html and main.js has been successful
         shell: bash
-        run: curl https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/index.html && curl https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/main.js
+        run: |
+          expected="<h1>Hello World!</h1>console.log('Hello World!');"
+          received=$(curl -s https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/index.html && curl -s https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/main.js)
+          if [[ $received != *"$expected"* ]]; then
+            echo ::error
+          fi
 
       - name: Verify that rollback fails, if no rollback-version specified
         uses: ./
