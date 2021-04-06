@@ -74,7 +74,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                 rollbackStorageAccount(storageAccount, rollbackVersion);
             }
         } else { // deploy a new version
-            const version = pushBranchVersionTagForMicrofrontend(branch, microfrontend);
+            const version = await pushBranchVersionTagForMicrofrontend(branch, microfrontend);
             let deployedAnything = false;
             for (currentRegion of availableRegions) {
                 if (region && (region != currentRegion.name)) {
