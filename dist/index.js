@@ -159,7 +159,7 @@ async function deployNewVersionToContainerOfStorageAccount(version, storageAccou
             ]);
         }
     }
-    core.info(`Finished deploying to ${storageAccount}.`);
+    core.info(`Finished deploying of version ${version} to ${storageAccount}.`);
     return true;
 }
 
