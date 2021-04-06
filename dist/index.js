@@ -179,7 +179,7 @@ async function rollbackStorageAccount(storageAccount, rollbackVersion) {
         core.info(`Not rolling back ${storageAccount} because account does not exist.`);
         return false;
     }
-    core.info(`Rolling back ${storageAccount}.`)
+    core.info(`Rolling back ${storageAccount} to version ${rollbackVersion}.`)
     for (let file of filesToVersion) {
         const filename = path.parse(file).name;
         const extension = path.parse(file).ext;
