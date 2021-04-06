@@ -16,7 +16,6 @@ const filesToVersion = new Set(['index.html', 'main.js']);
 
 (async () => {
     try {
-        // Define some parameters
         const container = core.getInput('container', {required: true});
         const sourceDirectory = core.getInput('source-directory') ? core.getInput('source-directory') : '';
         const region = core.getInput('region') ? core.getInput('region') : '';
@@ -68,6 +67,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
             '--tenant', process.env.ARM_TENANT_ID
         ], onlyShowErrorsExecOptions);
 
+        // Rollback or deploy
         if (inRollbackMode) {
             if (rollbackVersion.length <= 0) {
                 throw new Error('No version specified for rollback!');
@@ -80,85 +80,88 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                 const storageAccount = getStorageAccount(environment, currentRegion);
                 rollbackStorageAccount(storageAccount);
             }
-            return; // End action
-        }
-
-        const releaseVersion = pushBranchVersionTagForMicrofrontend(branch, microfrontend);
-        let deployedAnything = false;
-        for (currentRegionMap of availableRegions) {
-            const currentRegion = currentRegionMap.name;
-            if (region && (region != currentRegion)) {
-                core.info(`Not deploying to region ${currentRegion}...`);
-                continue;
-            }
-
-            let storageAccount = `leanix${currentRegion}${environment}`;
-            if (storageAccount.length > 24) {
-                storageAccount = `leanix${currentRegionMap.short}${environment}`;
-            }
-
-            const exitCode = await exec.exec('az', [
-                'storage', 'account', 'show',
-                '--name', storageAccount
-            ], {ignoreReturnCode: true, silent: true});
-            if (exitCode > 0) {
-                core.info(`Not deploying to region ${currentRegion} because no storage account named ${storageAccount} exists.`);
-                continue;
-            }
-
-            let response = '';
-            await exec.exec('az', [
-                'storage', 'container', 'exists',
-                '--account-name', storageAccount,
-                '--name', container
-            ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => response += data}});
-            let result = JSON.parse(response);
-            if (!result.exists) {
-                core.info(`Not deploying to region ${currentRegion} because no container ${container} exists.`);
-                continue;
-            }
-
-            core.info(`Now deploying to region ${currentRegion}!`);
-
-            if (sourceDirectory.length <= 0) {
-                throw new Error('Please specify a source directory when using this action for deployments.');
-            }
-            // Sync directory
-            await exec.exec('./azcopy', [
-                'sync', sourceDirectory,
-                `https://${storageAccount}.blob.core.windows.net/${container}/`,
-                '--recursive',
-                '--delete-destination', deleteDestination ? 'true' : 'false'
-            ]);
-            // Look for files to be versioned and upload them versioned
-            const directory = await fs.promises.opendir(sourceDirectory);
-            for await (const entry of directory) {
-                if (entry.isFile() && filesToVersion.has(entry.name)) {
-                    const filename = path.parse(entry.name).name;
-                    const extension = path.parse(entry.name).ext;
-                    const versionedFilename = `${filename}_${releaseVersion}${extension}`;
-                    core.info(`Creating versioned file ${versionedFilename} for ${entry.name}.`);
-                    await exec.exec('./azcopy', [
-                        'cp', `${sourceDirectory}/${entry.name}`,
-                        `https://${storageAccount}.blob.core.windows.net/${container}/${versionedFilename}`
-                    ]);
+        } else { // deploy a new version
+            const version = pushBranchVersionTagForMicrofrontend(branch, microfrontend);
+            let deployedAnything = false;
+            for (currentRegion of availableRegions) {
+                if (region && (region != currentRegion.name)) {
+                    core.info(`Not deploying to region ${currentRegion.name}...`);
+                    continue;
                 }
+                let storageAccount = getStorageAccount(environment, currentRegion);
+                const hasDeployedFiles = deployNewVersionToContainerOfStorageAccount(version, storageAccount, container, sourceDirectory, deleteDestination);
+                deployedAnything = deployedAnything || hasDeployedFiles;
             }
-
-            deployedAnything = true;
-
-            core.info(`Finished deploying to region ${currentRegion}.`);
-        }
-
-        if (deployedAnything) {
-            core.setOutput('version', releaseVersion);
-        } else {
-            throw new Error('Cound not find any container to deploy to!');
+            if (deployedAnything) {
+                core.setOutput('version', releaseVersion);
+            } else {
+                throw new Error('Could not find any container to deploy to!');
+            }
         }
     } catch (e) {
         core.setFailed(e.message);
     }
 })();
+
+/**
+ * Deploy a new version of the microfrontend to the specified container of the given storageAccount
+ * @param {*} version version number used for backups
+ * @param {*} storageAccount e.g. leanixwesteuropetest
+ * @param {*} container e.g. storage-deploy-action-public
+ * @param {*} sourceDirectory name of the directory where the files are located that should be deployed
+ * @param {*} deleteDestination wether to delete the files currently in the container
+ * @returns if files have been deployed
+ */
+async function deployNewVersionToContainerOfStorageAccount(version, storageAccount, container, sourceDirectory, deleteDestination) {
+    const exitCode = await exec.exec('az', [
+        'storage', 'account', 'show',
+        '--name', storageAccount
+    ], {ignoreReturnCode: true, silent: true});
+    if (exitCode > 0) {
+        core.info(`Not deploying to ${storageAccount} because storage account does not exist.`);
+        return false;
+    }
+    let response = '';
+    await exec.exec('az', [
+        'storage', 'container', 'exists',
+        '--account-name', storageAccount,
+        '--name', container
+    ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => response += data}});
+    let result = JSON.parse(response);
+    if (!result.exists) {
+        core.info(`Not deploying to ${storageAccount} because no container ${container} exists.`);
+        return false;
+    }
+
+    core.info(`Now deploying to region ${currentRegion}!`);
+
+    if (sourceDirectory.length <= 0) {
+        throw new Error('Please specify a source directory when using this action for deployments.');
+    }
+    // Sync directory
+    await exec.exec('./azcopy', [
+        'sync', sourceDirectory,
+        `https://${storageAccount}.blob.core.windows.net/${container}/`,
+        '--recursive',
+        '--delete-destination', deleteDestination ? 'true' : 'false'
+    ]);
+    // Look for files to be versioned and upload them versioned
+    const directory = await fs.promises.opendir(sourceDirectory);
+    for await (const entry of directory) {
+        if (entry.isFile() && filesToVersion.has(entry.name)) {
+            const filename = path.parse(entry.name).name;
+            const extension = path.parse(entry.name).ext;
+            const versionedFilename = `${filename}_${version}${extension}`;
+            core.info(`Creating versioned file ${versionedFilename} for ${entry.name}.`);
+            await exec.exec('./azcopy', [
+                'cp', `${sourceDirectory}/${entry.name}`,
+                `https://${storageAccount}.blob.core.windows.net/${container}/${versionedFilename}`
+            ]);
+        }
+    }
+    core.info(`Finished deploying to region ${currentRegion}.`);
+    return true;
+}
 
 /**
  * Rolls back the microfrontend deployed on some storage account to a given version. 
