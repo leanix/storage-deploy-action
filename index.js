@@ -71,7 +71,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                     continue;
                 }
                 const storageAccount = getStorageAccount(environment, currentRegion);
-                rollbackStorageAccount(storageAccount);
+                rollbackStorageAccount(storageAccount, rollbackVersion);
             }
         } else { // deploy a new version
             const version = pushBranchVersionTagForMicrofrontend(branch, microfrontend);
@@ -159,10 +159,10 @@ async function deployNewVersionToContainerOfStorageAccount(version, storageAccou
 /**
  * Rolls back the microfrontend deployed on some storage account to a given version. 
  * @param {*} storageAccount an identifier combing region and environment (e.g. leanixwesteuropetest)
- * @param {*} version roll back to this version (e.g. 5) 
+ * @param {*} rollbackVersion back to this version (e.g. 5) 
  * @return if the rollback has been successfully finished
  */
-async function rollbackStorageAccount(storageAccount, version) {
+async function rollbackStorageAccount(storageAccount, rollbackVersion) {
     const exitCode = await exec.exec(
         'az', 
         ['storage', 'account', 'show', '--name', storageAccount],
