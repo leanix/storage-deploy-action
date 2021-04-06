@@ -34,7 +34,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
         }
 
         // Check region
-        const checkRegions = availableRegions.map(o => o.region);
+        const checkRegions = availableRegions.map(availableRegion => availableRegion.name);
         if (region && !checkRegions.includes(region)) {
             const availableRegionsString = checkRegions.join(', ');
             throw new Error(`Unknown region ${region}, must be one of: ${availableRegionsString}`);
