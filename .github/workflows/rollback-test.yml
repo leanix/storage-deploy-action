@@ -67,7 +67,7 @@ jobs:
           expected="<h1>Hello World!</h1>console.log('Hello World!');"
           received=$(curl -s https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/index.html && curl -s https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/main.js)
           if [[ $received != *"$expected"* ]]; then
-            echo ::error
+            echo "::error ::Rollback has not been successful"
           fi
 
       - name: Verify that rollback fails, if no rollback-version specified
