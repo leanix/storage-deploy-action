@@ -6,8 +6,8 @@ inputs:
     required: true
   source-directory:
     description: 'Directory containing the files to deploy'
-    default: ''
-    required: false 
+    default: '.'
+    required: true
   environment:
     description: 'Environment to deploy to'
     default: 'test'
