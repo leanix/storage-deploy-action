@@ -79,7 +79,6 @@ jobs:
         uses: ./
         with:
           container: storage-deploy-action-public
-          source-directory: test
           environment: test
           region: westeurope
           rollback-mode: true

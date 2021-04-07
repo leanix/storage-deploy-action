@@ -72,7 +72,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                     continue;
                 }
                 const storageAccount = getStorageAccount(environment, currentRegion);
-                await rollbackStorageAccount(storageAccount, rollbackVersion, sourceDirectory);
+                await rollbackStorageAccount(storageAccount, rollbackVersion);
             }
         } else { // deploy a new version
             const version = await pushBranchVersionTagForMicrofrontend(branch, microfrontend);
@@ -161,10 +161,9 @@ async function deployNewVersionToContainerOfStorageAccount(version, storageAccou
  * Rolls back the microfrontend deployed on some storage account to a given version. 
  * @param {string} storageAccount an identifier combing region and environment (e.g. leanixwesteuropetest)
  * @param {string} rollbackVersion back to this version (e.g. 5)
- * @param {string} sourceDirectory directory where the versioned file is stored
  * @return if the rollback has been successfully finished
  */
-async function rollbackStorageAccount(storageAccount, rollbackVersion, sourceDirectory) {
+async function rollbackStorageAccount(storageAccount, rollbackVersion) {
     const exitCode = await exec.exec(
         'az', 
         ['storage', 'account', 'show', '--name', storageAccount],
@@ -182,16 +181,16 @@ async function rollbackStorageAccount(storageAccount, rollbackVersion, sourceDir
             // Download versioned file
             await exec.exec('./azcopy', [
                 'cp',
-                `https://${storageAccount}.blob.core.windows.net/${container}/${sourceDirectory}/${filename}_${rollbackVersion}${extension}`,
+                `https://${storageAccount}.blob.core.windows.net/${container}/${filename}_${rollbackVersion}${extension}`,
                 `rollback/${filename}_${rollbackVersion}${extension}`
             ]);
             // Upload versioned file as unversioned file
             await exec.exec('./azcopy', [
                 'sync', `rollback/${filename}_${rollbackVersion}${extension}`,
-                `https://${storageAccount}.blob.core.windows.net/${container}/${sourceDirectory}/${file}`
+                `https://${storageAccount}.blob.core.windows.net/${container}/${file}`
             ]);
         } catch (e) {
-            core.info(`File ${filename}_${rollbackVersion}${extension} does not exist in storage container.`);
+            core.info(`File https://${storageAccount}.blob.core.windows.net/${container}/${filename}_${rollbackVersion}${extension} does not exist in storage container.`);
             continue;
         }
     }
