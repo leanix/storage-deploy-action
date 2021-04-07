@@ -11253,6 +11253,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                 }
                 let storageAccount = getStorageAccount(environment, currentRegion);
                 const sasToken = await getSasToken(storageAccount);
+                core.info(`Received sasToken, ${sasToken}`);
                 const hasDeployedFiles = await deployToContainerOfStorageAccount(sasToken, storageAccount, container, sourceDirectory);
                 deployedAnything = deployedAnything || hasDeployedFiles;
                 if (versionDeployment && hasDeployedFiles) { // store backup version of the deployment
@@ -11294,7 +11295,8 @@ async function getSasToken(storageAccount) {
         ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => sasResponse += data}});
     } catch (e) {
         core.info('Failed to fetch sas token');
-        core.info(`SAS response ${sasResponse}`);
+        const sasToken = JSON.parse(sasResponse);
+        return sasToken;
     }
     const sasToken = JSON.parse(sasResponse);
     return sasToken;
