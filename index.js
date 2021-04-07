@@ -138,8 +138,7 @@ async function deployToContainerOfStorageAccount(storageAccount, container, sour
     await exec.exec('./azcopy', [
         'sync', sourceDirectory + '/',
         `https://${storageAccount}.blob.core.windows.net/${container}/`,
-        '--recursive',
-        '--delete-destination', 'true'
+        '--recursive'
     ]);
     return true;
 }
