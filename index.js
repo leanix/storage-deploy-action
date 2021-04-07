@@ -83,27 +83,16 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                     continue;
                 }
                 let storageAccount = getStorageAccount(environment, currentRegion);
-                // Fetch SAS token
-                const expires = moment().utc().add(2, 'hours').format();
-                let sasResponse = '';
-                    await exec.exec('az', [
-                        'storage', 'account', 'generate-sas',
-                        '--expiry', expires,
-                        '--permissions', 'acuw',
-                        '--account-name', storageAccount,
-                        '--resource-types', 'o',
-                        '--services', 'f',
-                        '--https-only',
-                        '-o', 'json'
-                    ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => sasResponse += data}});
-                const sasToken = JSON.parse(sasResponse);
-                core.info(`Received sasToken, ${sasToken}`);
-                const hasDeployedFiles = await deployToContainerOfStorageAccount(sasToken, storageAccount, container, sourceDirectory);
-                deployedAnything = deployedAnything || hasDeployedFiles;
-                if (versionDeployment && hasDeployedFiles) { // store backup version of the deployment
-                    const version = await pushBranchVersionTagForMicrofrontend(branch, microfrontend);
-                    await backupDeployedVersion(version, sasToken, sourceDirectory, storageAccount, container);
-                    core.setOutput('version', version);
+                const canDeploy = await isExistingStorageAccountAndContainer(storageAccount, container);
+                if (canDeploy) {
+                    const sasToken = await getSasToken(storageAccount);
+                    await deployToContainerOfStorageAccount(storageAccount, container, sourceDirectory);
+                    deployedAnything = true;
+                    if (versionDeployment) { // store backup version of the deployment
+                        const version = await pushBranchVersionTagForMicrofrontend(branch, microfrontend);
+                        await backupDeployedVersion(version, sasToken, sourceDirectory, storageAccount, container);
+                        core.setOutput('version', version);
+                    }
                 }
             }
 
@@ -126,29 +115,27 @@ async function getSasToken(storageAccount) {
     // Fetch SAS token
     const expires = moment().utc().add(2, 'hours').format();
     let sasResponse = '';
-        await exec.exec('az', [
-            'storage', 'account', 'generate-sas',
-            '--expiry', expires,
-            '--permissions', 'acuw',
-            '--account-name', storageAccount,
-            '--resource-types', 'o',
-            '--services', 'f',
-            '--https-only',
-            '-o', 'json'
-        ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => sasResponse += data}});
+    await exec.exec('az', [
+        'storage', 'account', 'generate-sas',
+        '--expiry', expires,
+        '--permissions', 'acuw',
+        '--account-name', storageAccount,
+        '--resource-types', 'o',
+        '--services', 'f',
+        '--https-only',
+        '-o', 'json'
+    ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => sasResponse += data}});
     const sasToken = JSON.parse(sasResponse);
     return sasToken;
 }
 
 /**
- * Deploy a the microfrontend to the specified container of the given storageAccount
- * @param {string} sasToken token to access Azure File storage on the storageAccount
- * @param {string} storageAccount e.g. leanixwesteuropetest
- * @param {string} container e.g. storage-deploy-action-public
- * @param {string} sourceDirectory name of the directory where the files are located that should be deployed
- * @returns if files have been deployed
+ * 
+ * @param {string} storageAccount identifies region and environment
+ * @param {string} container identifies storage container
+ * @returns true is both storageAccount and container exist
  */
-async function deployToContainerOfStorageAccount(sasToken, storageAccount, container, sourceDirectory) {
+async function isExistingStorageAccountAndContainer(storageAccount, container) {
     const exitCode = await exec.exec('az', [
         'storage', 'account', 'show',
         '--name', storageAccount
@@ -168,9 +155,18 @@ async function deployToContainerOfStorageAccount(sasToken, storageAccount, conta
         core.info(`Not deploying to ${storageAccount} because no container ${container} exists.`);
         return false;
     }
+    return true;
+}
 
+/**
+ * Deploy a the microfrontend to the specified container of the given storageAccount
+ * @param {string} sasToken token to access Azure File storage on the storageAccount
+ * @param {string} storageAccount e.g. leanixwesteuropetest
+ * @param {string} container e.g. storage-deploy-action-public
+ * @param {string} sourceDirectory name of the directory where the files are located that should be deployed
+ */
+async function deployToContainerOfStorageAccount(sasToken, storageAccount, container, sourceDirectory) {
     core.info(`Now deploying to ${storageAccount}!`);
-
     if (sourceDirectory.length <= 0) {
         throw new Error('Please specify a source directory when using this action for deployments.');
     }
@@ -181,20 +177,13 @@ async function deployToContainerOfStorageAccount(sasToken, storageAccount, conta
         `https://${storageAccount}.blob.core.windows.net/${container}/`,
         '--recursive'
     ]);
-
-    try {
-        // Copy directory to Azure File Storage
-        core.info(`Now deploying to Azure File Storage ${storageAccount}.`);
-        await exec.exec('./azcopy', [
-            'copy', sourceDirectory + '/*',
-            `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}?${sasToken}`,
-            '--recursive'
-        ]);
-    } catch (e) {
-        core.info('Deployment to file storage failed');
-        return true;
-    }
-    return true;
+    // Copy directory to Azure File Storage
+    core.info(`Now deploying to Azure File Storage ${storageAccount}.`);
+    await exec.exec('./azcopy', [
+        'copy', sourceDirectory + '/*',
+        `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}?${sasToken}`,
+        '--recursive'
+    ]);
 }
 
 /**
