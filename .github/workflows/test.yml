@@ -145,7 +145,7 @@ jobs:
           container: storage-deploy-action-public
           region: foobar
 
-    - name: Fails because of invalid environment
+      - name: Fails because of invalid environment
         uses: ./
         continue-on-error: true
         with:
@@ -154,7 +154,7 @@ jobs:
           container: storage-deploy-action-public
           environment: foobar
 
-    - name: Fails because no branch provided
+      - name: Fails because no branch provided
         uses: ./
         continue-on-error: true
         with:
