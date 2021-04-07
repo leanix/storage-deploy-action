@@ -125,6 +125,7 @@ async function getSasToken(storageAccount) {
         ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => sasResponse += data}});
     } catch (e) {
         core.info('Failed to fetch sas token');
+        core.info(`SAS response ${sasResponse}`);
     }
     const sasToken = JSON.parse(sasResponse);
     return sasToken;
