@@ -133,13 +133,6 @@ jobs:
           source-directory: test
           container: storage-deploy-action-unknown
 
-      - name: Fails because of missing source directory
-        uses: ./
-        continue-on-error: true
-        with:
-          branch: ${{ steps.extract-branch.outputs.branch }}
-          container: storage-deploy-action-public
-
       - name: Fails because of invalid region
         uses: ./
         continue-on-error: true
