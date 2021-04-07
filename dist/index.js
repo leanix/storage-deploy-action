@@ -11180,7 +11180,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
 (async () => {
     try {
         const container = core.getInput('container', {required: true});
-        const sourceDirectory = core.getInput('source-directory') ? core.getInput('source-directory') : '';
+        const sourceDirectory = core.getInput('source-directory', {required: true});
         const region = core.getInput('region') ? core.getInput('region') : '';
         const deleteDestination = (core.getInput('delete-destination') == 'true') ? true : false;
         const environment = core.getInput('environment') ? core.getInput('environment') : 'test';
