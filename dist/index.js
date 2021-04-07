@@ -11241,7 +11241,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                     continue;
                 }
                 const storageAccount = getStorageAccount(environment, currentRegion);
-                rollbackStorageAccount(storageAccount, rollbackVersion);
+                await rollbackStorageAccount(storageAccount, rollbackVersion, sourceDirectory);
             }
         } else { // deploy a new version
             const version = await pushBranchVersionTagForMicrofrontend(branch, microfrontend);
@@ -11302,7 +11302,7 @@ async function deployNewVersionToContainerOfStorageAccount(version, storageAccou
         throw new Error('Please specify a source directory when using this action for deployments.');
     }
     // Sync directory to Azure Blob Storage
-    core.info(`Now deploying to Azure Blob Storage ${storageAccount}.`);
+    core.info(`Now deploying to Azure Blob Storage ${storageAccount} directory ${sourceDirectory}.`);
     await exec.exec('./azcopy', [
         'sync', sourceDirectory,
         `https://${storageAccount}.blob.core.windows.net/${container}/`,
@@ -11319,7 +11319,7 @@ async function deployNewVersionToContainerOfStorageAccount(version, storageAccou
             core.info(`Creating versioned file ${versionedFilename} for ${entry.name} in Azure Blob storage.`);
             await exec.exec('./azcopy', [
                 'copy', `${sourceDirectory}/${entry.name}`,
-                `https://${storageAccount}.blob.core.windows.net/${container}/${versionedFilename}`
+                `https://${storageAccount}.blob.core.windows.net/${container}/${sourceDirectory}/${versionedFilename}`
             ]);
         }
     }
@@ -11330,10 +11330,11 @@ async function deployNewVersionToContainerOfStorageAccount(version, storageAccou
 /**
  * Rolls back the microfrontend deployed on some storage account to a given version. 
  * @param {string} storageAccount an identifier combing region and environment (e.g. leanixwesteuropetest)
- * @param {string} rollbackVersion back to this version (e.g. 5) 
+ * @param {string} rollbackVersion back to this version (e.g. 5)
+ * @param {string} sourceDirectory directory where the versioned file is stored
  * @return if the rollback has been successfully finished
  */
-async function rollbackStorageAccount(storageAccount, rollbackVersion) {
+async function rollbackStorageAccount(storageAccount, rollbackVersion, sourceDirectory) {
     const exitCode = await exec.exec(
         'az', 
         ['storage', 'account', 'show', '--name', storageAccount],
