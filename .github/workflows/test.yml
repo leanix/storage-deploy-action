@@ -53,7 +53,7 @@ jobs:
       - name: Modify the microfrontend by introducing a breaking change
         run: python ./.github/workflows/introduce_breaking_change.py
 
-      - name: Deploy new version
+      - name: Deploy breaking change without versioning 
         uses: ./
         with:
           branch: ${{ steps.extract-branch.outputs.branch }}
@@ -62,6 +62,7 @@ jobs:
           environment: test
           region: westeurope
           microfrontend: test-microfronted
+          version-deployment: false
         id: breaking-change-deployment
 
       - name: Deployment of breaking change has been successful 

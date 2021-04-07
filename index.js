@@ -17,6 +17,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
         const environment = core.getInput('environment') ? core.getInput('environment') : 'test';
         const branch = core.getInput('branch') ? core.getInput('branch') : '';
         const microfrontend = core.getInput('microfrontend') ? core.getInput('microfrontend') : '';
+        const versionDeployment = core.getInput('version-deployment') == 'true' ? true : false;
         const inRollbackMode = (core.getInput('rollback-mode') === 'true') ? true : false;
         const rollbackVersion = core.getInput('rollback-version') ? core.getInput('rollback-version') : '';
         const onlyShowErrorsExecOptions = {outStream: noopStream, errStream: process.stderr};
@@ -75,7 +76,6 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                 await rollbackStorageAccount(storageAccount, rollbackVersion);
             }
         } else { // deploy a new version
-            const version = await pushBranchVersionTagForMicrofrontend(branch, microfrontend);
             let deployedAnything = false;
             for (currentRegion of availableRegions) {
                 if (region && (region != currentRegion.name)) {
@@ -86,9 +86,13 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                 const hasDeployedFiles = await deployNewVersionToContainerOfStorageAccount(version, storageAccount, container, sourceDirectory, deleteDestination);
                 deployedAnything = deployedAnything || hasDeployedFiles;
             }
-            if (deployedAnything) {
+            if (versionDeployment && deployedAnything) { // store backup version of the deployment
+                const version = await pushBranchVersionTagForMicrofrontend(branch, microfrontend);
+                await versionDeployment(version, sourceDirectory, storageAccount, container);
                 core.setOutput('version', version);
-            } else {
+            }
+
+            if(!deployedAnything) {
                 throw new Error('Could not find any container to deploy to!');
             }
         }
@@ -98,15 +102,14 @@ const filesToVersion = new Set(['index.html', 'main.js']);
 })();
 
 /**
- * Deploy a new version of the microfrontend to the specified container of the given storageAccount
- * @param {string} version version number used for backups
+ * Deploy a the microfrontend to the specified container of the given storageAccount
  * @param {string} storageAccount e.g. leanixwesteuropetest
  * @param {string} container e.g. storage-deploy-action-public
  * @param {string} sourceDirectory name of the directory where the files are located that should be deployed
  * @param {boolean} deleteDestination wether to delete the files currently in the container
  * @returns if files have been deployed
  */
-async function deployNewVersionToContainerOfStorageAccount(version, storageAccount, container, sourceDirectory, deleteDestination) {
+async function deployToContainerOfStorageAccount(storageAccount, container, sourceDirectory) {
     const exitCode = await exec.exec('az', [
         'storage', 'account', 'show',
         '--name', storageAccount
@@ -139,6 +142,17 @@ async function deployNewVersionToContainerOfStorageAccount(version, storageAccou
         `https://${storageAccount}.blob.core.windows.net/${container}/`,
         '--recursive'
     ]);
+    return true;
+}
+
+/**
+ * Backup the deployed version.
+ * @param {string} version Identifier of the version (e.g. 22)
+ * @param {string} sourceDirectory Directory where the deployed files are stored
+ * @param {string} storageAccount Identify blob storage on Azure
+ * @param {string} container Identify blob container in storageAccount
+ */
+async function versionDeployment(version, sourceDirectory, storageAccount, container) {
     // Look for files to be versioned and upload them versioned
     const directory = await fs.promises.opendir(sourceDirectory);
     for await (const entry of directory) {
@@ -153,8 +167,7 @@ async function deployNewVersionToContainerOfStorageAccount(version, storageAccou
             ]);
         }
     }
-    core.info(`Finished deploying of version ${version} to ${storageAccount}.`);
-    return true;
+    core.info(`Finished creation of backup ${version} in ${storageAccount}.blob.core.windows.net/${container}.`);
 }
 
 /**

@@ -28,6 +28,10 @@ inputs:
     description: 'Name of microfrontend if a microfrontend from a monorepo is supposed to be deployed'
     default: ''
     required: false
+  version-deployment:
+    description: 'Whether to version the deployment'
+    default: true
+    required: false 
   rollback-mode:
     description: 'Activate the rollback mode. If activated rolls back any index.html and main.js on the given container to the given version'
     default: 'false'
