@@ -44,6 +44,7 @@ jobs:
         run: |
           expected="<h1>Hello World!</h1>console.log('Hello World!');"
           received=$(curl -s https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/index.html && curl -s https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/main.js)
+          echo "received: " $received
           if [[ $received != *"$expected"* ]]; then
             echo "::error ::Deployment has not been successful"
             exit 1
@@ -68,6 +69,7 @@ jobs:
         run: |
           expected="<h1>Breaking Change</h1>console.log('Breaking Change');"
           received=$(curl -s https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/index.html && curl -s https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/main.js)
+          echo "received: " $received
           if [[ $received != *"$expected"* ]]; then
             echo "::error ::Deployment has not been successful"
             exit 1
@@ -88,6 +90,7 @@ jobs:
         run: |
           expected="<h1>Hello World!</h1>console.log('Hello World!');"
           received=$(curl -s https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/index.html && curl -s https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/main.js)
+          echo "received: " $received
           if [[ $received != *"$expected"* ]]; then
             echo "::error ::Rollback has not been successful"
             exit 1
