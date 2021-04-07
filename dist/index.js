@@ -11306,8 +11306,7 @@ async function deployNewVersionToContainerOfStorageAccount(version, storageAccou
     await exec.exec('./azcopy', [
         'sync', sourceDirectory,
         `https://${storageAccount}.blob.core.windows.net/${container}/`,
-        '--recursive',
-        '--delete-destination', deleteDestination ? 'true' : 'false'
+        '--recursive'
     ]);
     // Look for files to be versioned and upload them versioned
     const directory = await fs.promises.opendir(sourceDirectory);
@@ -11352,13 +11351,13 @@ async function rollbackStorageAccount(storageAccount, rollbackVersion, sourceDir
             // Download versioned file
             await exec.exec('./azcopy', [
                 'cp',
-                `https://${storageAccount}.blob.core.windows.net/${container}/${filename}_${rollbackVersion}${extension}`,
+                `https://${storageAccount}.blob.core.windows.net/${container}/${sourceDirectory}/${filename}_${rollbackVersion}${extension}`,
                 `rollback/${filename}_${rollbackVersion}${extension}`
             ]);
             // Upload versioned file as unversioned file
             await exec.exec('./azcopy', [
                 'sync', `rollback/${filename}_${rollbackVersion}${extension}`,
-                `https://${storageAccount}.blob.core.windows.net/${container}/${file}`
+                `https://${storageAccount}.blob.core.windows.net/${container}/${sourceDirectory}/${file}`
             ]);
         } catch (e) {
             core.info(`File ${filename}_${rollbackVersion}${extension} does not exist in storage container.`);
