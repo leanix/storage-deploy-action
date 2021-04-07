@@ -98,7 +98,6 @@ const filesToVersion = new Set(['index.html', 'main.js']);
             }
         }
     } catch (e) {
-        core.info(`Something went wrong ${e}`);
         core.setFailed(e.message);
     }
 })();
@@ -169,13 +168,18 @@ async function deployToContainerOfStorageAccount(sasToken, storageAccount, conta
         '--recursive'
     ]);
 
-    // Copy directory to Azure File Storage
-    core.info(`Now deploying to Azure File Storage ${storageAccount}.`);
-    await exec.exec('./azcopy', [
-        'copy', sourceDirectory + '/*',
-        `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}?${sasToken}`,
-        '--recursive'
-    ]);
+    try {
+        // Copy directory to Azure File Storage
+        core.info(`Now deploying to Azure File Storage ${storageAccount}.`);
+        await exec.exec('./azcopy', [
+            'copy', sourceDirectory + '/*',
+            `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}?${sasToken}`,
+            '--recursive'
+        ]);
+    } catch (e) {
+        core.info('Deployment to file storage failed');
+        return true;
+    }
     return true;
 }
 
@@ -200,11 +204,17 @@ async function backupDeployedVersion(version, sasToken, sourceDirectory, storage
                 'copy', `${sourceDirectory}/${entry.name}`,
                 `https://${storageAccount}.blob.core.windows.net/${container}/${versionedFilename}`
             ]);
-            core.info(`Creating versioned file ${versionedFilename} for ${entry.name} in Azure File storage.`);
-            await exec.exec('./azcopy', [
-                'copy', `${sourceDirectory}/${entry.name}`,
-                `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}/${versionedFilename}?${sasToken}`
-            ]);
+            try {
+                core.info(`Creating versioned file ${versionedFilename} for ${entry.name} in Azure File storage.`);
+                await exec.exec('./azcopy', [
+                    'copy', `${sourceDirectory}/${entry.name}`,
+                    `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}/${versionedFilename}?${sasToken}`
+                ]);
+            } catch (e) {
+                core.info('Backup to file storage failed');
+                return;
+            }
+            
         }
     }
     core.info(`Finished creation of backup ${version} in ${storageAccount}.blob.core.windows.net/${container} and ${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}.`);
