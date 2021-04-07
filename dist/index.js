@@ -11304,7 +11304,7 @@ async function deployNewVersionToContainerOfStorageAccount(version, storageAccou
     // Sync directory to Azure Blob Storage
     core.info(`Now deploying to Azure Blob Storage ${storageAccount}.`);
     await exec.exec('./azcopy', [
-        'copy', sourceDirectory + '/*',
+        'sync', sourceDirectory,
         `https://${storageAccount}.blob.core.windows.net/${container}/`,
         '--recursive',
         '--delete-destination', deleteDestination ? 'true' : 'false'
