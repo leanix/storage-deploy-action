@@ -11252,7 +11252,20 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                     continue;
                 }
                 let storageAccount = getStorageAccount(environment, currentRegion);
-                const sasToken = await getSasToken(storageAccount);
+                // Fetch SAS token
+                const expires = moment().utc().add(2, 'hours').format();
+                let sasResponse = '';
+                    await exec.exec('az', [
+                        'storage', 'account', 'generate-sas',
+                        '--expiry', expires,
+                        '--permissions', 'acuw',
+                        '--account-name', storageAccount,
+                        '--resource-types', 'o',
+                        '--services', 'f',
+                        '--https-only',
+                        '-o', 'json'
+                    ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => sasResponse += data}});
+                const sasToken = JSON.parse(sasResponse);
                 core.info(`Received sasToken, ${sasToken}`);
                 const hasDeployedFiles = await deployToContainerOfStorageAccount(sasToken, storageAccount, container, sourceDirectory);
                 deployedAnything = deployedAnything || hasDeployedFiles;
@@ -11282,7 +11295,6 @@ async function getSasToken(storageAccount) {
     // Fetch SAS token
     const expires = moment().utc().add(2, 'hours').format();
     let sasResponse = '';
-    try {
         await exec.exec('az', [
             'storage', 'account', 'generate-sas',
             '--expiry', expires,
@@ -11293,11 +11305,6 @@ async function getSasToken(storageAccount) {
             '--https-only',
             '-o', 'json'
         ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => sasResponse += data}});
-    } catch (e) {
-        core.info('Failed to fetch sas token');
-        const sasToken = JSON.parse(sasResponse);
-        return sasToken;
-    }
     const sasToken = JSON.parse(sasResponse);
     return sasToken;
 }
