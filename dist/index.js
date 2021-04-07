@@ -11241,7 +11241,8 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                     continue;
                 }
                 const storageAccount = getStorageAccount(environment, currentRegion);
-                await rollbackStorageAccount(rollbackVersion, storageAccount, container);
+                const sasToken = await getSasToken(storageAccount);
+                await rollbackStorageAccount(rollbackVersion, sasToken, storageAccount, container);
             }
         } else { // deploy a new version
             let deployedAnything = false;
@@ -11266,6 +11267,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
             }
         }
     } catch (e) {
+        core.info(`Something went wrong ${JSON.stringify(e)}`);
         core.setFailed(e.message);
     }
 })();
@@ -11374,17 +11376,18 @@ async function backupDeployedVersion(version, sasToken, sourceDirectory, storage
             ]);
         }
     }
-    core.info(`Finished creation of backup ${version} in ${storageAccount}.blob.core.windows.net/${container}.`);
+    core.info(`Finished creation of backup ${version} in ${storageAccount}.blob.core.windows.net/${container} and ${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}.`);
 }
 
 /**
  * Rolls back the microfrontend deployed on some storage account to a given version. 
  * @param {string} rollbackVersion Back to this version (e.g. 5)
+ * @param {string} sasToken Token to access the Azure File Storage on the storageAccount
  * @param {string} storageAccount Identify region and environment (e.g. leanixwesteuropetest)
  * @param {string} container Identify the container on the storageAccount 
  * @return If the rollback has been successfully finished
  */
-async function rollbackStorageAccount(rollbackVersion, storageAccount, container) {
+async function rollbackStorageAccount(rollbackVersion, sasToken, storageAccount, container) {
     const exitCode = await exec.exec(
         'az', 
         ['storage', 'account', 'show', '--name', storageAccount],
@@ -11396,26 +11399,52 @@ async function rollbackStorageAccount(rollbackVersion, storageAccount, container
     }
     core.info(`Rolling back ${storageAccount} to version ${rollbackVersion}.`)
     for (let file of filesToVersion) {
-        const filename = path.parse(file).name;
-        const extension = path.parse(file).ext;
-        try {
-            // Download versioned file
-            await exec.exec('./azcopy', [
-                'cp',
-                `https://${storageAccount}.blob.core.windows.net/${container}/${filename}_${rollbackVersion}${extension}`,
-                `rollback/${filename}_${rollbackVersion}${extension}`
-            ]);
-            // Upload versioned file as unversioned file
-            await exec.exec('./azcopy', [
-                'copy', `rollback/${filename}_${rollbackVersion}${extension}`,
-                `https://${storageAccount}.blob.core.windows.net/${container}/${file}`
-            ]);
-        } catch (e) {
-            core.info(`File https://${storageAccount}.blob.core.windows.net/${container}/${filename}_${rollbackVersion}${extension} does not exist in storage container.`);
-            continue;
-        }
+        await rollbackFileOnBlobStorage(file, rollbackVersion, storageAccount, container);
+        await rollbackFileOnFileStorage(file, rollbackVersion, sasToken, storageAccount, container);
     }
     return true;
+}
+
+async function rollbackFileOnBlobStorage(file, rollbackVersion, storageAccount, container) {
+    const filename = path.parse(file).name;
+    const extension = path.parse(file).ext;
+    try {
+        // Download versioned file from blob storage
+        await exec.exec('./azcopy', [
+            'cp',
+            `https://${storageAccount}.blob.core.windows.net/${container}/${filename}_${rollbackVersion}${extension}`,
+            `rollback-blob-storage/${filename}_${rollbackVersion}${extension}`
+        ]);
+        // Upload versioned file as unversioned file to blob storage
+        await exec.exec('./azcopy', [
+            'copy', `rollback-blob-storage/${filename}_${rollbackVersion}${extension}`,
+            `https://${storageAccount}.blob.core.windows.net/${container}/${file}`
+        ]);
+    } catch (e) {
+        core.info(`File https://${storageAccount}.blob.core.windows.net/${container}/${filename}_${rollbackVersion}${extension} does not exist in blob storage container.`);
+        return;
+    }
+}
+
+async function rollbackFileOnFileStorage(file, rollbackVersion, sasToken, storageAccount, container) {
+    const filename = path.parse(file).name;
+    const extension = path.parse(file).ext;
+    try {
+        // Download versioned file from file storage
+        await exec.exec('./azcopy', [
+            'cp',
+            `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}/${filename}_${rollbackVersion}${extension}?${sasToken}`,
+            `rollback-file-storage/${filename}_${rollbackVersion}${extension}`
+        ]);
+        // Upload versioned file as unversioned file to file storage
+        await exec.exec('./azcopy', [
+            'copy', `rollback-file-storage/${filename}_${rollbackVersion}${extension}`,
+            `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}/${file}?${sasToken}`
+        ]);
+    } catch (e) {
+        core.info(`File https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}/${filename}_${rollbackVersion}${extension} does not exist in file storage container.`);
+        return;
+    }
 }
 
 /**

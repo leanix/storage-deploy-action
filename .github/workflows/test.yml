@@ -39,7 +39,7 @@ jobs:
           microfrontend: test-microfrontend
         id: initial-deployment 
 
-      - name: Deployment has been successful index.html and main.js
+      - name: Deployment to Azure Blob storage has been successful
         shell: bash
         run: |
           expected="<h1>Hello World!</h1>console.log('Hello World!');"
@@ -65,7 +65,7 @@ jobs:
           version-deployment: false
         id: breaking-change-deployment
 
-      - name: Deployment of breaking change has been successful 
+      - name: Deployment of breaking change to Azure Blob storage has been successful 
         shell: bash
         run: |
           expected="<h1>Breaking Change</h1>console.log('Breaking Change');"
@@ -86,7 +86,7 @@ jobs:
           rollback-mode: true
           rollback-version: ${{ steps.initial-deployment.outputs.version }}
 
-      - name: Rollback of index.html and main.js has been successful
+      - name: Rollback on Azure Blob storage has been successful
         shell: bash
         run: |
           expected="<h1>Hello World!</h1>console.log('Hello World!');"
