@@ -4,6 +4,7 @@ const core = require('@actions/core');
 const exec = require('@actions/exec');
 const noopStream = require('stream-blackhole')();
 const git = require('simple-git/promise')();
+const moment = require('moment');
 
 const filesToVersion = new Set(['index.html', 'main.js']);
 
@@ -82,7 +83,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                     continue;
                 }
                 let storageAccount = getStorageAccount(environment, currentRegion);
-                const hasDeployedFiles = deployNewVersionToContainerOfStorageAccount(version, storageAccount, container, sourceDirectory, deleteDestination);
+                const hasDeployedFiles = await deployNewVersionToContainerOfStorageAccount(version, storageAccount, container, sourceDirectory, deleteDestination);
                 deployedAnything = deployedAnything || hasDeployedFiles;
             }
             if (deployedAnything) {
@@ -98,11 +99,11 @@ const filesToVersion = new Set(['index.html', 'main.js']);
 
 /**
  * Deploy a new version of the microfrontend to the specified container of the given storageAccount
- * @param {*} version version number used for backups
- * @param {*} storageAccount e.g. leanixwesteuropetest
- * @param {*} container e.g. storage-deploy-action-public
- * @param {*} sourceDirectory name of the directory where the files are located that should be deployed
- * @param {*} deleteDestination wether to delete the files currently in the container
+ * @param {string} version version number used for backups
+ * @param {string} storageAccount e.g. leanixwesteuropetest
+ * @param {string} container e.g. storage-deploy-action-public
+ * @param {string} sourceDirectory name of the directory where the files are located that should be deployed
+ * @param {boolean} deleteDestination wether to delete the files currently in the container
  * @returns if files have been deployed
  */
 async function deployNewVersionToContainerOfStorageAccount(version, storageAccount, container, sourceDirectory, deleteDestination) {
@@ -131,7 +132,8 @@ async function deployNewVersionToContainerOfStorageAccount(version, storageAccou
     if (sourceDirectory.length <= 0) {
         throw new Error('Please specify a source directory when using this action for deployments.');
     }
-    // Sync directory
+    // Sync directory to Azure Blob Storage
+    core.info(`Now deploying to Azure Blob Storage ${storageAccount}.`);
     await exec.exec('./azcopy', [
         'sync', sourceDirectory,
         `https://${storageAccount}.blob.core.windows.net/${container}/`,
@@ -145,7 +147,7 @@ async function deployNewVersionToContainerOfStorageAccount(version, storageAccou
             const filename = path.parse(entry.name).name;
             const extension = path.parse(entry.name).ext;
             const versionedFilename = `${filename}_${version}${extension}`;
-            core.info(`Creating versioned file ${versionedFilename} for ${entry.name}.`);
+            core.info(`Creating versioned file ${versionedFilename} for ${entry.name} in Azure Blob storage.`);
             await exec.exec('./azcopy', [
                 'cp', `${sourceDirectory}/${entry.name}`,
                 `https://${storageAccount}.blob.core.windows.net/${container}/${versionedFilename}`
@@ -158,8 +160,8 @@ async function deployNewVersionToContainerOfStorageAccount(version, storageAccou
 
 /**
  * Rolls back the microfrontend deployed on some storage account to a given version. 
- * @param {*} storageAccount an identifier combing region and environment (e.g. leanixwesteuropetest)
- * @param {*} rollbackVersion back to this version (e.g. 5) 
+ * @param {string} storageAccount an identifier combing region and environment (e.g. leanixwesteuropetest)
+ * @param {string} rollbackVersion back to this version (e.g. 5) 
  * @return if the rollback has been successfully finished
  */
 async function rollbackStorageAccount(storageAccount, rollbackVersion) {
@@ -186,8 +188,7 @@ async function rollbackStorageAccount(storageAccount, rollbackVersion) {
             // Upload versioned file as unversioned file
             await exec.exec('./azcopy', [
                 'sync', `rollback/${filename}_${rollbackVersion}${extension}`,
-                `https://${storageAccount}.blob.core.windows.net/${container}/${file}`,
-                '--delete-destination', 'true'
+                `https://${storageAccount}.blob.core.windows.net/${container}/${file}`
             ]);
         } catch (e) {
             core.info(`File ${filename}_${rollbackVersion}${extension} does not exist in storage container.`);
@@ -200,8 +201,8 @@ async function rollbackStorageAccount(storageAccount, rollbackVersion) {
 /**
  * Returns the name of the storage account (e.g. leanixwesteuropetest) which is a combination of the region
  * and the environment.
- * @param {*} environment either test or prod
- * @param {*} region e.g. { name:'germanywestcentral', short:'de' }
+ * @param {string} environment either test or prod
+ * @param {string} region e.g. { name:'germanywestcentral', short:'de' }
  */
 function getStorageAccount(environment, region) {
     let storageAccount = `leanix${region.name}${environment}`;
@@ -213,8 +214,8 @@ function getStorageAccount(environment, region) {
 
 /**
  * Calculates the new branch version of the given microfrontend.
- * @param {*} branch
- * @param {*} microfrontend
+ * @param {string} branch
+ * @param {string} microfrontend
  * @returns The new version number
  */
 async function pushBranchVersionTagForMicrofrontend(branch, microfrontend) {
