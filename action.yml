@@ -16,10 +16,6 @@ inputs:
     description: 'Region to deploy to'
     default: ''
     required: false
-  delete-destination:
-    description: 'Delete files on destination if they no longer exist in the source'
-    default: 'true'
-    required: false
   branch:
     description: 'Name of the branch that you want to deploy'
     default: ''

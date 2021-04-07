@@ -11182,7 +11182,6 @@ const filesToVersion = new Set(['index.html', 'main.js']);
         const container = core.getInput('container', {required: true});
         const sourceDirectory = core.getInput('source-directory', {required: true});
         const region = core.getInput('region') ? core.getInput('region') : '';
-        const deleteDestination = (core.getInput('delete-destination') == 'true') ? true : false;
         const environment = core.getInput('environment') ? core.getInput('environment') : 'test';
         const branch = core.getInput('branch') ? core.getInput('branch') : '';
         const microfrontend = core.getInput('microfrontend') ? core.getInput('microfrontend') : '';
@@ -11306,9 +11305,10 @@ async function deployToContainerOfStorageAccount(storageAccount, container, sour
     // Sync directory to Azure Blob Storage
     core.info(`Now deploying to Azure Blob Storage ${storageAccount} directory ${sourceDirectory}.`);
     await exec.exec('./azcopy', [
-        'sync', sourceDirectory,
+        'sync', sourceDirectory + '/',
         `https://${storageAccount}.blob.core.windows.net/${container}/`,
-        '--recursive'
+        '--recursive',
+        '--delete-destination', 'true'
     ]);
     return true;
 }
@@ -11368,7 +11368,7 @@ async function rollbackStorageAccount(rollbackVersion, storageAccount, container
             ]);
             // Upload versioned file as unversioned file
             await exec.exec('./azcopy', [
-                'sync', `rollback/${filename}_${rollbackVersion}${extension}`,
+                'copy', `rollback/${filename}_${rollbackVersion}${extension}`,
                 `https://${storageAccount}.blob.core.windows.net/${container}/${file}`
             ]);
         } catch (e) {
