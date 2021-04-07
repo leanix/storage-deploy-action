@@ -11304,7 +11304,7 @@ async function deployNewVersionToContainerOfStorageAccount(version, storageAccou
     // Sync directory to Azure Blob Storage
     core.info(`Now deploying to Azure Blob Storage ${storageAccount}.`);
     await exec.exec('./azcopy', [
-        'copy', sourceDirectory,
+        'copy', sourceDirectory + '/*',
         `https://${storageAccount}.blob.core.windows.net/${container}/`,
         '--recursive',
         '--delete-destination', deleteDestination ? 'true' : 'false'
@@ -11318,7 +11318,7 @@ async function deployNewVersionToContainerOfStorageAccount(version, storageAccou
             const versionedFilename = `${filename}_${version}${extension}`;
             core.info(`Creating versioned file ${versionedFilename} for ${entry.name} in Azure Blob storage.`);
             await exec.exec('./azcopy', [
-                'cp', `${sourceDirectory}/${entry.name}`,
+                'copy', `${sourceDirectory}/${entry.name}`,
                 `https://${storageAccount}.blob.core.windows.net/${container}/${versionedFilename}`
             ]);
         }
