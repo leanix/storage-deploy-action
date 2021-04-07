@@ -11252,7 +11252,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                     continue;
                 }
                 let storageAccount = getStorageAccount(environment, currentRegion);
-                const hasDeployedFiles = await deployToContainerOfStorageAccount(version, storageAccount, container, sourceDirectory, deleteDestination);
+                const hasDeployedFiles = await deployToContainerOfStorageAccount(storageAccount, container, sourceDirectory);
                 deployedAnything = deployedAnything || hasDeployedFiles;
             }
             if (versionDeployment && deployedAnything) { // store backup version of the deployment
@@ -11275,7 +11275,6 @@ const filesToVersion = new Set(['index.html', 'main.js']);
  * @param {string} storageAccount e.g. leanixwesteuropetest
  * @param {string} container e.g. storage-deploy-action-public
  * @param {string} sourceDirectory name of the directory where the files are located that should be deployed
- * @param {boolean} deleteDestination wether to delete the files currently in the container
  * @returns if files have been deployed
  */
 async function deployToContainerOfStorageAccount(storageAccount, container, sourceDirectory) {
