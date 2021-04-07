@@ -11251,11 +11251,12 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                     continue;
                 }
                 let storageAccount = getStorageAccount(environment, currentRegion);
-                const hasDeployedFiles = await deployToContainerOfStorageAccount(storageAccount, container, sourceDirectory);
+                const sasToken = await getSasToken(storageAccount);
+                const hasDeployedFiles = await deployToContainerOfStorageAccount(sasToken, storageAccount, container, sourceDirectory);
                 deployedAnything = deployedAnything || hasDeployedFiles;
                 if (versionDeployment && hasDeployedFiles) { // store backup version of the deployment
                     const version = await pushBranchVersionTagForMicrofrontend(branch, microfrontend);
-                    await backupDeployedVersion(version, sourceDirectory, storageAccount, container);
+                    await backupDeployedVersion(version, sasToken, sourceDirectory, storageAccount, container);
                     core.setOutput('version', version);
                 }
             }
@@ -11269,14 +11270,39 @@ const filesToVersion = new Set(['index.html', 'main.js']);
     }
 })();
 
+
+/**
+ * Fetches a SAS token for accessing Azure File Storage
+ * @param {string} storageAccount account where we want to access the Azure File Storage
+ * @returns SAS token
+ */
+async function getSasToken(storageAccount) {
+    // Fetch SAS token
+    const expires = moment().utc().add(2, 'hours').format();
+    let sasResponse = '';
+    await exec.exec('az', [
+        'storage', 'account', 'generate-sas',
+        '--expiry', expires,
+        '--permissions', 'acuw',
+        '--account-name', storageAccount,
+        '--resource-types', 'o',
+        '--services', 'f',
+        '--https-only',
+        '-o', 'json'
+    ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => sasResponse += data}});
+    const sasToken = JSON.parse(sasResponse);
+    return sasToken;
+}
+
 /**
  * Deploy a the microfrontend to the specified container of the given storageAccount
+ * @param {string} sasToken token to access Azure File storage on the storageAccount
  * @param {string} storageAccount e.g. leanixwesteuropetest
  * @param {string} container e.g. storage-deploy-action-public
  * @param {string} sourceDirectory name of the directory where the files are located that should be deployed
  * @returns if files have been deployed
  */
-async function deployToContainerOfStorageAccount(storageAccount, container, sourceDirectory) {
+async function deployToContainerOfStorageAccount(sasToken, storageAccount, container, sourceDirectory) {
     const exitCode = await exec.exec('az', [
         'storage', 'account', 'show',
         '--name', storageAccount
@@ -11303,10 +11329,18 @@ async function deployToContainerOfStorageAccount(storageAccount, container, sour
         throw new Error('Please specify a source directory when using this action for deployments.');
     }
     // Sync directory to Azure Blob Storage
-    core.info(`Now deploying to Azure Blob Storage ${storageAccount} directory ${sourceDirectory}.`);
+    core.info(`Now deploying to Azure Blob Storage ${storageAccount}.`);
     await exec.exec('./azcopy', [
         'sync', sourceDirectory + '/',
         `https://${storageAccount}.blob.core.windows.net/${container}/`,
+        '--recursive'
+    ]);
+
+    // Copy directory to Azure File Storage
+    core.info(`Now deploying to Azure File Storage ${storageAccount}.`);
+    await exec.exec('./azcopy', [
+        'copy', sourceDirectory + '/*',
+        `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}?${sasToken}`,
         '--recursive'
     ]);
     return true;
@@ -11315,11 +11349,12 @@ async function deployToContainerOfStorageAccount(storageAccount, container, sour
 /**
  * Backup the deployed version.
  * @param {string} version Identifier of the version (e.g. 22)
+ * @param {string} sasToken Token to access the Azure File Storage on the storageAccount
  * @param {string} sourceDirectory Directory where the deployed files are stored
  * @param {string} storageAccount Identify region and environment
  * @param {string} container Identify blob container in storageAccount
  */
-async function backupDeployedVersion(version, sourceDirectory, storageAccount, container) {
+async function backupDeployedVersion(version, sasToken, sourceDirectory, storageAccount, container) {
     // Look for files to be versioned and upload them versioned
     const directory = await fs.promises.opendir(sourceDirectory);
     for await (const entry of directory) {
@@ -11331,6 +11366,11 @@ async function backupDeployedVersion(version, sourceDirectory, storageAccount, c
             await exec.exec('./azcopy', [
                 'copy', `${sourceDirectory}/${entry.name}`,
                 `https://${storageAccount}.blob.core.windows.net/${container}/${versionedFilename}`
+            ]);
+            core.info(`Creating versioned file ${versionedFilename} for ${entry.name} in Azure File storage.`);
+            await exec.exec('./azcopy', [
+                'copy', `${sourceDirectory}/${entry.name}`,
+                `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}/${versionedFilename}?${sasToken}`
             ]);
         }
     }
