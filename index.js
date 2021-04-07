@@ -89,7 +89,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                 const canDeploy = await isExistingStorageAccountAndContainer(storageAccount, container);
                 if (canDeploy) {
                     const sasToken = await getSasToken(storageAccount);
-                    await deployToContainerOfStorageAccount(storageAccount, container, sourceDirectory);
+                    await deployToContainerOfStorageAccount(sasToken, storageAccount, container, sourceDirectory);
                     deployedAnything = true;
                     if (versionDeployment) { // store backup version of the deployment
                         const version = await pushBranchVersionTagForMicrofrontend(branch, microfrontend);
