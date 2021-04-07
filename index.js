@@ -85,11 +85,11 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                 let storageAccount = getStorageAccount(environment, currentRegion);
                 const hasDeployedFiles = await deployToContainerOfStorageAccount(storageAccount, container, sourceDirectory);
                 deployedAnything = deployedAnything || hasDeployedFiles;
-            }
-            if (versionDeployment && deployedAnything) { // store backup version of the deployment
-                const version = await pushBranchVersionTagForMicrofrontend(branch, microfrontend);
-                await versionDeployment(version, sourceDirectory, storageAccount, container);
-                core.setOutput('version', version);
+                if (versionDeployment && hasDeployedFiles) { // store backup version of the deployment
+                    const version = await pushBranchVersionTagForMicrofrontend(branch, microfrontend);
+                    await versionDeployment(version, sourceDirectory, storageAccount, container);
+                    core.setOutput('version', version);
+                }
             }
 
             if(!deployedAnything) {
