@@ -11281,16 +11281,20 @@ async function getSasToken(storageAccount) {
     // Fetch SAS token
     const expires = moment().utc().add(2, 'hours').format();
     let sasResponse = '';
-    await exec.exec('az', [
-        'storage', 'account', 'generate-sas',
-        '--expiry', expires,
-        '--permissions', 'acuw',
-        '--account-name', storageAccount,
-        '--resource-types', 'o',
-        '--services', 'f',
-        '--https-only',
-        '-o', 'json'
-    ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => sasResponse += data}});
+    try {
+        await exec.exec('az', [
+            'storage', 'account', 'generate-sas',
+            '--expiry', expires,
+            '--permissions', 'acuw',
+            '--account-name', storageAccount,
+            '--resource-types', 'o',
+            '--services', 'f',
+            '--https-only',
+            '-o', 'json'
+        ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => sasResponse += data}});
+    } catch (e) {
+        core.info('Failed to fetch sas token');
+    }
     const sasToken = JSON.parse(sasResponse);
     return sasToken;
 }
