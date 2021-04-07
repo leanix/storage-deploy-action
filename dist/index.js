@@ -11267,7 +11267,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
             }
         }
     } catch (e) {
-        core.info(`Something went wrong ${JSON.stringify(e)}`);
+        core.info(`Something went wrong ${e}`);
         core.setFailed(e.message);
     }
 })();
