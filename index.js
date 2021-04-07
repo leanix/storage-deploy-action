@@ -149,7 +149,7 @@ async function deployNewVersionToContainerOfStorageAccount(version, storageAccou
             core.info(`Creating versioned file ${versionedFilename} for ${entry.name} in Azure Blob storage.`);
             await exec.exec('./azcopy', [
                 'copy', `${sourceDirectory}/${entry.name}`,
-                `https://${storageAccount}.blob.core.windows.net/${container}/${sourceDirectory}/${versionedFilename}`
+                `https://${storageAccount}.blob.core.windows.net/${container}/${versionedFilename}`
             ]);
         }
     }
