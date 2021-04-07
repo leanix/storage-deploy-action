@@ -30,9 +30,15 @@ jobs:
           microfrontend: test-microfrontend
         id: initial-deployment 
 
-      - name: Show deployed index.html and main.js
+      - name: Test if deployment has been successful index.html and main.js
         shell: bash
-        run: curl https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/index.html && curl https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/main.js
+        run: |
+          expected="<h1>Hello World!</h1>console.log('Hello World!');"
+          received=$(curl -s https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/index.html && curl -s https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/main.js)
+          if [[ $received != *"$expected"* ]]; then
+            echo "::error ::Deployment has not been successful"
+            exit 1
+          fi
 
       - name: Modify the microfrontend by introducing a breaking change
         run: python ./.github/workflows/introduce_breaking_change.py
