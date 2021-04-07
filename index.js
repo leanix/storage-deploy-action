@@ -72,8 +72,11 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                     continue;
                 }
                 const storageAccount = getStorageAccount(environment, currentRegion);
-                const sasToken = await getSasToken(storageAccount);
-                await rollbackStorageAccount(rollbackVersion, sasToken, storageAccount, container);
+                const canRollback = await isExistingStorageAccountAndContainer(storageAccount, container);
+                if (canRollback) {
+                    const sasToken = await getSasToken(storageAccount);
+                    await rollbackStorageAccount(rollbackVersion, sasToken, storageAccount, container);
+                }
             }
         } else { // deploy a new version
             let deployedAnything = false;
@@ -141,7 +144,7 @@ async function isExistingStorageAccountAndContainer(storageAccount, container) {
         '--name', storageAccount
     ], {ignoreReturnCode: true, silent: true});
     if (exitCode > 0) {
-        core.info(`Not deploying to ${storageAccount} because storage account does not exist.`);
+        core.info(`Storage Account ${storageAccount} does not exist.`);
         return false;
     }
     let response = '';
@@ -152,7 +155,7 @@ async function isExistingStorageAccountAndContainer(storageAccount, container) {
     ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => response += data}});
     let result = JSON.parse(response);
     if (!result.exists) {
-        core.info(`Not deploying to ${storageAccount} because no container ${container} exists.`);
+        core.info(`Container ${container} on Storage Account ${storageAccount} does not exist.`);
         return false;
     }
     return true;
