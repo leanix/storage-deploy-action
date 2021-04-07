@@ -11242,7 +11242,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                     continue;
                 }
                 const storageAccount = getStorageAccount(environment, currentRegion);
-                await rollbackStorageAccount(storageAccount, rollbackVersion);
+                await rollbackStorageAccount(rollbackVersion, storageAccount, container);
             }
         } else { // deploy a new version
             let deployedAnything = false;
@@ -11252,7 +11252,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                     continue;
                 }
                 let storageAccount = getStorageAccount(environment, currentRegion);
-                const hasDeployedFiles = await deployNewVersionToContainerOfStorageAccount(version, storageAccount, container, sourceDirectory, deleteDestination);
+                const hasDeployedFiles = await deployToContainerOfStorageAccount(version, storageAccount, container, sourceDirectory, deleteDestination);
                 deployedAnything = deployedAnything || hasDeployedFiles;
             }
             if (versionDeployment && deployedAnything) { // store backup version of the deployment
@@ -11318,7 +11318,7 @@ async function deployToContainerOfStorageAccount(storageAccount, container, sour
  * Backup the deployed version.
  * @param {string} version Identifier of the version (e.g. 22)
  * @param {string} sourceDirectory Directory where the deployed files are stored
- * @param {string} storageAccount Identify blob storage on Azure
+ * @param {string} storageAccount Identify region and environment
  * @param {string} container Identify blob container in storageAccount
  */
 async function versionDeployment(version, sourceDirectory, storageAccount, container) {
@@ -11341,11 +11341,12 @@ async function versionDeployment(version, sourceDirectory, storageAccount, conta
 
 /**
  * Rolls back the microfrontend deployed on some storage account to a given version. 
- * @param {string} storageAccount an identifier combing region and environment (e.g. leanixwesteuropetest)
- * @param {string} rollbackVersion back to this version (e.g. 5)
- * @return if the rollback has been successfully finished
+ * @param {string} rollbackVersion Back to this version (e.g. 5)
+ * @param {string} storageAccount Identify region and environment (e.g. leanixwesteuropetest)
+ * @param {string} container Identify the container on the storageAccount 
+ * @return If the rollback has been successfully finished
  */
-async function rollbackStorageAccount(storageAccount, rollbackVersion) {
+async function rollbackStorageAccount(rollbackVersion, storageAccount, container) {
     const exitCode = await exec.exec(
         'az', 
         ['storage', 'account', 'show', '--name', storageAccount],
