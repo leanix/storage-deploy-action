@@ -11182,6 +11182,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
         const container = core.getInput('container', {required: true});
         const sourceDirectory = core.getInput('source-directory', {required: true});
         const region = core.getInput('region') ? core.getInput('region') : '';
+        const deleteDestination = (core.getInput('delete-destination') == 'true') ? true : false;
         const environment = core.getInput('environment') ? core.getInput('environment') : 'test';
         const branch = core.getInput('branch') ? core.getInput('branch') : '';
         const microfrontend = core.getInput('microfrontend') ? core.getInput('microfrontend') : '';
@@ -11258,7 +11259,7 @@ const filesToVersion = new Set(['index.html', 'main.js']);
                 const canDeploy = await isExistingStorageAccountAndContainer(storageAccount, container);
                 if (canDeploy) {
                     const sasToken = await getSasToken(storageAccount);
-                    await deployToContainerOfStorageAccount(sasToken, storageAccount, container, sourceDirectory);
+                    await deployToContainerOfStorageAccount(sasToken, storageAccount, container, sourceDirectory, deleteDestination);
                     deployedAnything = true;
                     if (versionDeployment) { // store backup version of the deployment
                         const version = await pushBranchVersionTagForMicrofrontend(branch, microfrontend);
@@ -11336,8 +11337,9 @@ async function isExistingStorageAccountAndContainer(storageAccount, container) {
  * @param {string} storageAccount e.g. leanixwesteuropetest
  * @param {string} container e.g. storage-deploy-action-public
  * @param {string} sourceDirectory name of the directory where the files are located that should be deployed
+ * @param {boolean} deleteDestination whether to delete all files in the container that are not in the sourceDirectory
  */
-async function deployToContainerOfStorageAccount(sasToken, storageAccount, container, sourceDirectory) {
+async function deployToContainerOfStorageAccount(sasToken, storageAccount, container, sourceDirectory, deleteDestination) {
     core.info(`Now deploying to ${storageAccount}!`);
     if (sourceDirectory.length <= 0) {
         throw new Error('Please specify a source directory when using this action for deployments.');
@@ -11347,14 +11349,16 @@ async function deployToContainerOfStorageAccount(sasToken, storageAccount, conta
     await exec.exec('./azcopy', [
         'sync', sourceDirectory + '/',
         `https://${storageAccount}.blob.core.windows.net/${container}/`,
-        '--recursive'
+        '--recursive',
+        '--delete-destination', deleteDestination ? 'true' : 'false'
     ]);
-    // Copy directory to Azure File Storage
+    // Sync directory to Azure File Storage
     core.info(`Now deploying to Azure File Storage ${storageAccount}.`);
     await exec.exec('./azcopy', [
-        'copy', sourceDirectory + '/*',
+        'sync', sourceDirectory + '/*',
         `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}?${sasToken}`,
-        '--recursive'
+        '--recursive',
+        '--delete-destination', deleteDestination ? 'true' : 'false'
     ]);
 }
 

@@ -8,6 +8,10 @@ inputs:
     description: 'Directory containing the files to deploy'
     default: '.'
     required: true
+  delete-destination:
+    description: 'Delete files on destination if they no longer exist in the source'
+    default: 'false'
+    required: false
   environment:
     description: 'Environment to deploy to'
     default: 'test'
