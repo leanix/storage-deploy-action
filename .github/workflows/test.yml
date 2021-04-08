@@ -24,7 +24,7 @@ jobs:
           az login --service-principal -u ${{ env.ARM_CLIENT_ID }} -p=${{ env.ARM_CLIENT_SECRET }} --tenant ${{ env.ARM_TENANT_ID }}
           expires="$(TZ=UTC date -d '+2 hours' +%Y-%m-%dT%H:%MZ)"
           echo $expires
-          sasToken="$(az storage account generate-sas --expiry $expires --permissions acuw --account-name leanixwesteuropetest --resource-types o --services f --https-only -o json)"
+          sasToken="$(az storage account generate-sas --expiry $expires --permissions acuw --account-name leanixwesteuropetest --resource-types o --services f --https-only -o json | jq --raw-output)"
           echo $sasToken
       
       - name: Deploy a microfrontend to all regions
