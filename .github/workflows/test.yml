@@ -65,14 +65,12 @@ jobs:
           echo $SAS_TOKEN
           indexHtmlUrl="https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/index.html?$SAS_TOKEN"
           echo $indexHtmlUrl
-          azcopy copy $indexHtmlUrl "downloads/index.html"
-          receivedIndexHtml=$(cat downloads/index.html)
+          receivedIndexHtml=$(curl -s $indexHtmlUrl)
           echo $receivedIndexHtml
           if [[ $receivedIndexHtml != *"$expectedIndexHtml"]]
             echo "::error ::Deployment of index.html has not been successful"
             exit 1
           fi
-          rm -r downloads/
 
       - name: Modify the microfrontend by introducing a breaking change
         run: python ./.github/workflows/introduce_breaking_change.py
