@@ -64,6 +64,7 @@ jobs:
           expectedIndexHtml="<h1>Hello World!</h1>"
           expectedMainJs="console.log('Hello World!');"
           sasToken=$(echo ${{ steps.azure-token.outputs.sasToken }})
+          echo $sasToken
           azcopy copy "https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/index.html?$sasToken" "downloads/index.html"
           receivedIndexHtml=$(cat downloads/index.html)
           echo $receivedIndexHtml
