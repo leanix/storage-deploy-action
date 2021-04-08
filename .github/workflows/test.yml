@@ -69,7 +69,7 @@ jobs:
             exit 1
           fi
           expectedMainJs="console.log('Hello World!');"
-          mainJsUrl="https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action/main.js?$SAS_TOKEN"
+          mainJsUrl="https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/main.js?$SAS_TOKEN"
           receivedMainJs=$(curl -X GET -H "x-ms-date: $(date -u)" "$mainJsUrl")
           if [[ $receivedMainJs != *"$expectedMainJs"* ]]; then
             echo "::error ::Deployment of main.js has not been successful"
@@ -117,7 +117,7 @@ jobs:
             exit 1
           fi
           expectedMainJs="console.log('Breaking Change');"
-          mainJsUrl="https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action/main.js?$SAS_TOKEN"
+          mainJsUrl="https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/main.js?$SAS_TOKEN"
           receivedMainJs=$(curl -X GET -H "x-ms-date: $(date -u)" "$mainJsUrl")
           if [[ $receivedMainJs != *"$expectedMainJs"* ]]; then
             echo "::error ::Deployment of main.js has not been successful"
@@ -159,7 +159,7 @@ jobs:
             exit 1
           fi
           expectedMainJs="console.log('Hello World!');"
-          mainJsUrl="https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action/main.js?$SAS_TOKEN"
+          mainJsUrl="https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/main.js?$SAS_TOKEN"
           receivedMainJs=$(curl -X GET -H "x-ms-date: $(date -u)" "$mainJsUrl")
           if [[ $receivedMainJs != *"$expectedMainJs"* ]]; then
             echo "::error ::Rollback of main.js has not been successful"
