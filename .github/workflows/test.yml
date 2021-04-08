@@ -62,12 +62,10 @@ jobs:
         run: |
           expectedIndexHtml="<h1>Hello World!</h1>"
           expectedMainJs="console.log('Hello World!');"
-          echo $SAS_TOKEN
           indexHtmlUrl="https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/index.html?$SAS_TOKEN"
-          echo $indexHtmlUrl
           receivedIndexHtml=$(curl -X GET -H "x-ms-date: $(date -u)" "$indexHtmlUrl")
           echo $receivedIndexHtml
-          if [[ $receivedIndexHtml != *"$expectedIndexHtml"]]
+          if [[ $receivedIndexHtml != *"$expectedIndexHtml"* ]]
             echo "::error ::Deployment of index.html has not been successful"
             exit 1
           fi
