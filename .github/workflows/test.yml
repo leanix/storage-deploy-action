@@ -25,8 +25,7 @@ jobs:
           expires="$(TZ=UTC date -d '+2 hours' +%Y-%m-%dT%H:%MZ)"
           sasToken="$(az storage account generate-sas --expiry $expires --permissions acuw --account-name leanixwesteuropetest --resource-types o --services f --https-only -o json | jq --raw-output)"
           echo $sasToken
-          echo "::set-output name=sasToken::$sasToken"
-        id: azure-token
+          echo "SAS_TOKEN=$(echo $sasToken)" >> $GITHUB_ENV
       
       - name: Deploy a microfrontend to all regions
         uses: ./
@@ -63,9 +62,10 @@ jobs:
         run: |
           expectedIndexHtml="<h1>Hello World!</h1>"
           expectedMainJs="console.log('Hello World!');"
-          sasToken=$(echo ${{ steps.azure-token.outputs.sasToken }})
-          echo $sasToken
-          azcopy copy "https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/index.html?$sasToken" "downloads/index.html"
+          echo $SAS_TOKEN
+          indexHtmlUrl="https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/index.html?$SAS_TOKEN"
+          echo $indexHtmlUrl
+          azcopy copy $indexHtmlUrl "downloads/index.html"
           receivedIndexHtml=$(cat downloads/index.html)
           echo $receivedIndexHtml
           if [[ $receivedIndexHtml != *"$expectedIndexHtml"]]
