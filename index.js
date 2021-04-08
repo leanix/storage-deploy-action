@@ -129,7 +129,6 @@ async function getSasToken(storageAccount) {
         '-o', 'json'
     ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => sasResponse += data}});
     const sasToken = JSON.parse(sasResponse);
-    core.info(`Create SAS token: ${sasToken}`);
     return sasToken;
 }
 
