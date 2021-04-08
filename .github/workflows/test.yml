@@ -25,7 +25,7 @@ jobs:
           expires="$(TZ=UTC date -d '+2 hours' +%Y-%m-%dT%H:%MZ)"
           sasToken="$(az storage account generate-sas --expiry $expires --permissions acuw --account-name leanixwesteuropetest --resource-types o --services f --https-only -o json | jq --raw-output)"
           echo $sasToken
-          echo "##[set-output name=sasToken;]$(echo $sasToken)"
+          echo "::set-output name=sasToken::$sasToken"
         id: azure-token
       
       - name: Deploy a microfrontend to all regions
@@ -61,9 +61,15 @@ jobs:
       
       - name: Deployment to Azure File Share has been successful
         run: |
-          expected="<h1>Hello World!</h1>console.log('Hello World!');"
+          expectedIndexHtml="<h1>Hello World!</h1>"
+          expectedMainJs="console.log('Hello World!');"
           sasToken=$(echo ${{ steps.azure-token.outputs.sasToken }})
-          echo $sasToken
+          receivedIndexHtml=$(azcopy copy https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/index.html?$sasToken)
+          echo $receivedIndexHtml
+          if [[ $receivedIndexHtml != *"$expectedIndexHtml"]]
+            echo "::error ::Deployment of index.html has not been successful"
+            exit 1
+          fi
 
       - name: Modify the microfrontend by introducing a breaking change
         run: python ./.github/workflows/introduce_breaking_change.py
