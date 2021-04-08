@@ -65,7 +65,7 @@ jobs:
           echo $SAS_TOKEN
           indexHtmlUrl="https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/index.html?$SAS_TOKEN"
           echo $indexHtmlUrl
-          receivedIndexHtml=$(curl -s $indexHtmlUrl)
+          receivedIndexHtml=$(curl -X GET -H "x-ms-date: $(date -u)" "$indexHtmlUrl")
           echo $receivedIndexHtml
           if [[ $receivedIndexHtml != *"$expectedIndexHtml"]]
             echo "::error ::Deployment of index.html has not been successful"
