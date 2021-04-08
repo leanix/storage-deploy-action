@@ -12,8 +12,10 @@ with:
   source-directory: dist/           # Directory containing the files to deploy
   environment: prod                 # Optional, environment to deploy to, defaults to 'test'
   region: westeurope                # Optional, region to deploy to, default is all regions having a suitable storage account and container
-  delete-destination: false         # Optional, whether to delete files in the destination that are no longer existing in the source directory, defaults to 'true'
   microfrontend: self-configuration # Optional, if a microfrontend is deployed using this action, passing the microfrontend name is a must for distinct version tags within the monorepo
+  version-deployment: true          # Optional, whether to store a backup of the deployed version
+  rollback-mode: false              # Whether to enter rollback mode (nothing will be deployed)
+  rollback-version: 10              # Restore the index.html or main.js backed up under this version number, if they exist
 ```
 
 This action requires that you also use the "leanix/secrets-action@master".
@@ -21,7 +23,7 @@ The action will check that you only deploy to a container that has the name of y
 The action will also fail if it cannot find any container considering the given environment & region parameters.
 
 ## Details
-The action will use git tags to manage a version that is used to tag `index.html` and `main.js` files deployed to the container.
+The action can use git tags to manage a version, if `version-deployment` is set to true. It uses the tag to backup a deployed `index.html` and `main.js` under the version number in the blob storage / file share.
 It will search for tags "VERSION-(optional: MICROFRONTEND)-BRANCH-NUMBER" on the current branch, where BRANCH is the name of the branch,
 MICROFRONTEND is the name of the microfrontend if a microfrontend is deployed with this action, and NUMBER is a version. If it does not
 find a version, it will start at 1. If it finds tags matching the version naming pattern, it will use the highest version to determine the
