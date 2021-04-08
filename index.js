@@ -186,7 +186,7 @@ async function deployToContainerOfStorageAccount(sasToken, storageAccount, conta
     // Sync directory to Azure File Storage
     core.info(`Now deploying to Azure File Storage ${storageAccount}.`);
     await exec.exec('./azcopy', [
-        'sync', sourceDirectory + '/*',
+        'sync', sourceDirectory + '/',
         `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}?${sasToken}`,
         '--recursive',
         '--delete-destination', deleteDestination ? 'true' : 'false'
