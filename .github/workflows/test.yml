@@ -76,6 +76,8 @@ jobs:
             echo "expected: $expectedMainJs but received: $receivedMainJs"
             exit 1
           fi
+          echo $receivedIndexHtml
+          echo $receivedMainJs
 
 
       - name: Modify the microfrontend by introducing a breaking change
