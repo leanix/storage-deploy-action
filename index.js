@@ -121,7 +121,7 @@ async function getSasToken(storageAccount) {
     await exec.exec('az', [
         'storage', 'account', 'generate-sas',
         '--expiry', expires,
-        '--permissions', 'racuw',
+        '--permissions', 'acuwr',
         '--account-name', storageAccount,
         '--resource-types', 'o',
         '--services', 'f',
