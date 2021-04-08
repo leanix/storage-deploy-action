@@ -105,6 +105,27 @@ jobs:
             echo "::error ::Deployment has not been successful"
             exit 1
           fi
+      
+      - name: Deployment of breaking change to Azure File Share has been successful
+        run: |
+          expectedIndexHtml="<h1>Breaking Change</h1>"
+          indexHtmlUrl="https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/index.html?$SAS_TOKEN"
+          receivedIndexHtml=$(curl -X GET -H "x-ms-date: $(date -u)" "$indexHtmlUrl")
+          if [[ $receivedIndexHtml != *"$expectedIndexHtml"* ]]; then
+            echo "::error ::Deployment of index.html has not been successful"
+            echo "expected: $expectedIndexHtml but received: $receivedIndexHtml"
+            exit 1
+          fi
+          expectedMainJs="console.log('Breaking Change');"
+          mainJsUrl="https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action/main.js?$SAS_TOKEN"
+          receivedMainJs=$(curl -X GET -H "x-ms-date: $(date -u)" "$mainJsUrl")
+          if [[ $receivedMainJs != *"$expectedMainJs"* ]]; then
+            echo "::error ::Deployment of main.js has not been successful"
+            echo "expected: $expectedMainJs but received: $receivedMainJs"
+            exit 1
+          fi
+          echo $receivedIndexHtml
+          echo $receivedMainJs
 
       - name: Rollback the breaking change deployment to the initial deployed version
         uses: ./
@@ -126,6 +147,27 @@ jobs:
             echo "::error ::Rollback has not been successful"
             exit 1
           fi
+
+      - name: Rollback of breaking change to Azure File Share has been successful
+        run: |
+          expectedIndexHtml="<h1>Hello World!</h1>"
+          indexHtmlUrl="https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/index.html?$SAS_TOKEN"
+          receivedIndexHtml=$(curl -X GET -H "x-ms-date: $(date -u)" "$indexHtmlUrl")
+          if [[ $receivedIndexHtml != *"$expectedIndexHtml"* ]]; then
+            echo "::error ::Rollback of index.html has not been successful"
+            echo "expected: $expectedIndexHtml but received: $receivedIndexHtml"
+            exit 1
+          fi
+          expectedMainJs="console.log('Hello World!');"
+          mainJsUrl="https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action/main.js?$SAS_TOKEN"
+          receivedMainJs=$(curl -X GET -H "x-ms-date: $(date -u)" "$mainJsUrl")
+          if [[ $receivedMainJs != *"$expectedMainJs"* ]]; then
+            echo "::error ::Rollback of main.js has not been successful"
+            echo "expected: $expectedMainJs but received: $receivedMainJs"
+            exit 1
+          fi
+          echo $receivedIndexHtml
+          echo $receivedMainJs
 
       - name: Rollback fails, if no rollback-version specified
         uses: ./
