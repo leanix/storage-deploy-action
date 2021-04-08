@@ -53,7 +53,7 @@ jobs:
           expected="<h1>Hello World!</h1>console.log('Hello World!');"
           received=$(curl -s https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/index.html && curl -s https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/main.js)
           echo "received: " $received
-          if [[ $received != *"$expected"* ]]
+          if [[ $received != *"$expected"* ]]; then
             echo "::error ::Deployment has not been successful"
             exit 1
           fi
@@ -61,11 +61,10 @@ jobs:
       - name: Deployment to Azure File Share has been successful
         run: |
           expectedIndexHtml="<h1>Hello World!</h1>"
-          expectedMainJs="console.log('Hello World!');"
           indexHtmlUrl="https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/index.html?$SAS_TOKEN"
           receivedIndexHtml=$(curl -X GET -H "x-ms-date: $(date -u)" "$indexHtmlUrl")
           echo $receivedIndexHtml
-          if [[ $receivedIndexHtml != *"$expectedIndexHtml"* ]]
+          if [[ $receivedIndexHtml != *"$expectedIndexHtml"* ]]; then
             echo "::error ::Deployment of index.html has not been successful"
             exit 1
           fi
