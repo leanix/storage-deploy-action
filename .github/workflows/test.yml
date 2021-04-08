@@ -64,12 +64,14 @@ jobs:
           expectedIndexHtml="<h1>Hello World!</h1>"
           expectedMainJs="console.log('Hello World!');"
           sasToken=$(echo ${{ steps.azure-token.outputs.sasToken }})
-          receivedIndexHtml=$(azcopy copy https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/index.html?$sasToken)
+          azcopy copy "https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/index.html?$sasToken" "downloads/index.html"
+          receivedIndexHtml=$(cat downloads/index.html)
           echo $receivedIndexHtml
           if [[ $receivedIndexHtml != *"$expectedIndexHtml"]]
             echo "::error ::Deployment of index.html has not been successful"
             exit 1
           fi
+          rm -r downloads/
 
       - name: Modify the microfrontend by introducing a breaking change
         run: python ./.github/workflows/introduce_breaking_change.py
