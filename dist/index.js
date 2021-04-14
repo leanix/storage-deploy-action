@@ -11230,6 +11230,10 @@ const filesToVersion = new Set(['index.html', 'main.js']);
             '--password', process.env.ARM_CLIENT_SECRET,
             '--tenant', process.env.ARM_TENANT_ID
         ], onlyShowErrorsExecOptions);
+        await exec.exec('az', [
+            'account', 'set',
+            '-s', process.env.ARM_SUBSCRIPTION_ID
+        ], onlyShowErrorsExecOptions);
 
         // Rollback or deploy
         if (inRollbackMode) {
