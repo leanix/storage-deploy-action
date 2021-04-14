@@ -1,150 +1,7 @@
-module.exports =
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 918:
-/***/ ((__unused_webpack_module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const core = __nccwpck_require__(61);
-const exec = __nccwpck_require__(420);
-const noopStream = __nccwpck_require__(991)();
-const moment = __nccwpck_require__(652);
-
-(async () => {
-    try {
-
-        // Define some parameters
-        const container = core.getInput('container', {required: true});
-        const sourceDirectory = core.getInput('source-directory', {required: true});
-        const region = core.getInput('region') ? core.getInput('region') : '';
-        const deleteDestination = (core.getInput('delete-destination') == 'true') ? true : false;
-        const environment = core.getInput('environment') ? core.getInput('environment') : 'test';
-        const onlyShowErrorsExecOptions = {outStream: noopStream, errStream: process.stderr};
-        const availableRegions = [
-            {region:'westeurope',short:'eu'},
-            {region:'eastus',short:'us'},
-            {region:'canadacentral',short:'ca'},
-            {region:'australiaeast',short:'au'},
-            {region:'germanywestcentral',short:'de'}
-        ];
-
-        // Check environment
-        if (!['test', 'prod'].includes(environment)) {
-            throw new Error(`Unknown environment ${environment}, must be one of: test, prod`);
-        }
-
-        // Check region
-        const checkRegions = availableRegions.map(o => o.region);
-        if (region && !checkRegions.includes(region)) {
-            const availableRegionsString = checkRegions.join(', ');
-            throw new Error(`Unknown region ${region}, must be one of: ${availableRegionsString}`);
-        }
-
-        const repositoryShortName = process.env.GITHUB_REPOSITORY.replace(/leanix(?:\/|-)/gi, '');
-        if (container.includes(repositoryShortName) === false) {
-            throw new Error(`You may not deploy to a container that does not correspond to your repository name (${container} does not contain ${repositoryShortName})`);
-        }
-
-        // Install & login to Azure / Azure Copy
-        await exec.exec('wget', ['-q', '-O', 'azcopy.tar.gz', 'https://aka.ms/downloadazcopy-v10-linux'], onlyShowErrorsExecOptions)
-        await exec.exec('tar', ['--strip-components=1', '-xzf', 'azcopy.tar.gz'], onlyShowErrorsExecOptions)
-        core.exportVariable('AZCOPY_SPA_CLIENT_SECRET', process.env.ARM_CLIENT_SECRET)
-        await exec.exec('./azcopy', [
-            'login', '--service-principal',
-            '--application-id', process.env.ARM_CLIENT_ID,
-            '--tenant-id', process.env.ARM_TENANT_ID
-        ], onlyShowErrorsExecOptions);
-        await exec.exec('az', [
-            'login', '--service-principal',
-            '--username', process.env.ARM_CLIENT_ID,
-            '--password', process.env.ARM_CLIENT_SECRET,
-            '--tenant', process.env.ARM_TENANT_ID
-        ], onlyShowErrorsExecOptions);
-        
-        let deployedAnything = false;
-
-        for (currentRegionMap of availableRegions) {
-            const currentRegion = currentRegionMap.region;
-            if (region && (region != currentRegion)) {
-                core.info(`Not deploying to region ${currentRegion}...`);
-                continue;
-            }
-
-            let storageAccount = `leanix${currentRegion}${environment}`;
-            if (storageAccount.length > 24) {
-                storageAccount = `leanix${currentRegionMap.short}${environment}`;
-            }
-
-            const exitCode = await exec.exec('az', [
-                'storage', 'account', 'show',
-                '--name', storageAccount
-            ], {ignoreReturnCode: true, silent: true});
-            if (exitCode > 0) {
-                core.info(`Not deploying to region ${currentRegion} because no storage account named ${storageAccount} exists.`);
-                continue;
-            }
-
-            let response = '';
-            await exec.exec('az', [
-                'storage', 'container', 'exists',
-                '--account-name', storageAccount,
-                '--name', container
-            ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => response += data}});
-            let result = JSON.parse(response);
-            if (!result.exists) {
-                core.info(`Not deploying to region ${currentRegion} because no container ${container} exists.`);
-                continue;
-            }
-
-            // Sync directory to Azure Blob Storage
-            core.info(`Now deploying to Azure Blob Storage. region: ${currentRegion}`);
-            await exec.exec('./azcopy', [
-                'sync', sourceDirectory,
-                `https://${storageAccount}.blob.core.windows.net/${container}/`,
-                '--recursive',
-                '--delete-destination', deleteDestination ? 'true' : 'false'
-            ]);
-
-            // Fetch SAS token
-            let expires = moment().utc().add(2, 'hours').format();
-            let sasResponse = '';
-            await exec.exec('az', [
-                'storage', 'account', 'generate-sas',
-                '--expiry', expires,
-                '--permissions', 'acuw',
-                '--account-name', storageAccount,
-                '--resource-types', 'o',
-                '--services', 'f',
-                '--https-only',
-                '-o', 'json'
-            ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => sasResponse += data}});
-            let sasToken = JSON.parse(sasResponse);
-
-             // Copy directory to Azure File Storage
-             core.info(`Now deploying to Azure File Storage. region: ${currentRegion}`);
-             await exec.exec('./azcopy', [
-                'copy', sourceDirectory + '/*',
-                `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}?${sasToken}`,
-                '--recursive'
-            ]);
-
-            deployedAnything = true;
-
-            core.info(`Finished deploying to region ${currentRegion}.`);
-        }
-
-        if (!deployedAnything) {
-            throw new Error('Cound not find any container to deploy to!');
-        }
-    } catch (e) {
-        core.setFailed(e.message);
-    }
-})();
-
-
-/***/ }),
-
-/***/ 396:
+/***/ 604:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -158,7 +15,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const os = __importStar(__nccwpck_require__(87));
-const utils_1 = __nccwpck_require__(936);
+const utils_1 = __nccwpck_require__(245);
 /**
  * Commands
  *
@@ -230,7 +87,7 @@ function escapeProperty(s) {
 
 /***/ }),
 
-/***/ 61:
+/***/ 127:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -252,9 +109,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const command_1 = __nccwpck_require__(396);
-const file_command_1 = __nccwpck_require__(547);
-const utils_1 = __nccwpck_require__(936);
+const command_1 = __nccwpck_require__(604);
+const file_command_1 = __nccwpck_require__(352);
+const utils_1 = __nccwpck_require__(245);
 const os = __importStar(__nccwpck_require__(87));
 const path = __importStar(__nccwpck_require__(622));
 /**
@@ -475,7 +332,7 @@ exports.getState = getState;
 
 /***/ }),
 
-/***/ 547:
+/***/ 352:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -493,7 +350,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const fs = __importStar(__nccwpck_require__(747));
 const os = __importStar(__nccwpck_require__(87));
-const utils_1 = __nccwpck_require__(936);
+const utils_1 = __nccwpck_require__(245);
 function issueCommand(command, message) {
     const filePath = process.env[`GITHUB_${command}`];
     if (!filePath) {
@@ -511,7 +368,7 @@ exports.issueCommand = issueCommand;
 
 /***/ }),
 
-/***/ 936:
+/***/ 245:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -537,7 +394,7 @@ exports.toCommandValue = toCommandValue;
 
 /***/ }),
 
-/***/ 420:
+/***/ 49:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -552,7 +409,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const tr = __nccwpck_require__(475);
+const tr = __nccwpck_require__(469);
 /**
  * Exec a command.
  * Output will be streamed to the live console.
@@ -581,7 +438,7 @@ exports.exec = exec;
 
 /***/ }),
 
-/***/ 475:
+/***/ 469:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -600,8 +457,8 @@ const os = __nccwpck_require__(87);
 const events = __nccwpck_require__(614);
 const child = __nccwpck_require__(129);
 const path = __nccwpck_require__(622);
-const io = __nccwpck_require__(430);
-const ioUtil = __nccwpck_require__(80);
+const io = __nccwpck_require__(864);
+const ioUtil = __nccwpck_require__(887);
 /* eslint-disable @typescript-eslint/unbound-method */
 const IS_WINDOWS = process.platform === 'win32';
 /*
@@ -1175,7 +1032,7 @@ class ExecState extends events.EventEmitter {
 
 /***/ }),
 
-/***/ 80:
+/***/ 887:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -1377,7 +1234,7 @@ function isUnixExecutable(stats) {
 
 /***/ }),
 
-/***/ 430:
+/***/ 864:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -1395,7 +1252,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const childProcess = __nccwpck_require__(129);
 const path = __nccwpck_require__(622);
 const util_1 = __nccwpck_require__(669);
-const ioUtil = __nccwpck_require__(80);
+const ioUtil = __nccwpck_require__(887);
 const exec = util_1.promisify(childProcess.exec);
 /**
  * Copies a file or folder.
@@ -1674,7 +1531,7 @@ function copyFile(srcFile, destFile, force) {
 
 /***/ }),
 
-/***/ 652:
+/***/ 279:
 /***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
 
 /* module decorator */ module = __nccwpck_require__.nmd(module);
@@ -7351,7 +7208,7 @@ function copyFile(srcFile, destFile, force) {
 
 /***/ }),
 
-/***/ 991:
+/***/ 857:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 var util = __nccwpck_require__(669);
@@ -7447,8 +7304,9 @@ module.exports = require("util");;
 /******/ 	// The require function
 /******/ 	function __nccwpck_require__(moduleId) {
 /******/ 		// Check if module is in cache
-/******/ 		if(__webpack_module_cache__[moduleId]) {
-/******/ 			return __webpack_module_cache__[moduleId].exports;
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
 /******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = __webpack_module_cache__[moduleId] = {
@@ -7485,10 +7343,152 @@ module.exports = require("util");;
 /******/ 	
 /******/ 	/* webpack/runtime/compat */
 /******/ 	
-/******/ 	__nccwpck_require__.ab = __dirname + "/";/************************************************************************/
-/******/ 	// module exports must be returned from runtime so entry inlining is disabled
-/******/ 	// startup
-/******/ 	// Load entry module and return exports
-/******/ 	return __nccwpck_require__(918);
+/******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";/************************************************************************/
+var __webpack_exports__ = {};
+// This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
+(() => {
+const core = __nccwpck_require__(127);
+const exec = __nccwpck_require__(49);
+const noopStream = __nccwpck_require__(857)();
+const moment = __nccwpck_require__(279);
+
+(async () => {
+    try {
+
+        // Define some parameters
+        const container = core.getInput('container', {required: true});
+        const sourceDirectory = core.getInput('source-directory', {required: true});
+        const region = core.getInput('region') ? core.getInput('region') : '';
+        const deleteDestination = (core.getInput('delete-destination') == 'true') ? true : false;
+        const environment = core.getInput('environment') ? core.getInput('environment') : 'test';
+        const onlyShowErrorsExecOptions = {outStream: noopStream, errStream: process.stderr};
+        const availableRegions = [
+            {region:'westeurope',short:'eu'},
+            {region:'eastus',short:'us'},
+            {region:'canadacentral',short:'ca'},
+            {region:'australiaeast',short:'au'},
+            {region:'germanywestcentral',short:'de'}
+        ];
+
+        // Check environment
+        if (!['test', 'prod'].includes(environment)) {
+            throw new Error(`Unknown environment ${environment}, must be one of: test, prod`);
+        }
+
+        // Check region
+        const checkRegions = availableRegions.map(o => o.region);
+        if (region && !checkRegions.includes(region)) {
+            const availableRegionsString = checkRegions.join(', ');
+            throw new Error(`Unknown region ${region}, must be one of: ${availableRegionsString}`);
+        }
+
+        const repositoryShortName = process.env.GITHUB_REPOSITORY.replace(/leanix(?:\/|-)/gi, '');
+        if (container.includes(repositoryShortName) === false) {
+            throw new Error(`You may not deploy to a container that does not correspond to your repository name (${container} does not contain ${repositoryShortName})`);
+        }
+
+        // Install & login to Azure / Azure Copy
+        await exec.exec('wget', ['-q', '-O', 'azcopy.tar.gz', 'https://aka.ms/downloadazcopy-v10-linux'], onlyShowErrorsExecOptions)
+        await exec.exec('tar', ['--strip-components=1', '-xzf', 'azcopy.tar.gz'], onlyShowErrorsExecOptions)
+        core.exportVariable('AZCOPY_SPA_CLIENT_SECRET', process.env.ARM_CLIENT_SECRET)
+        await exec.exec('./azcopy', [
+            'login', '--service-principal',
+            '--application-id', process.env.ARM_CLIENT_ID,
+            '--tenant-id', process.env.ARM_TENANT_ID
+        ], onlyShowErrorsExecOptions);
+        await exec.exec('az', [
+            'login', '--service-principal',
+            '--username', process.env.ARM_CLIENT_ID,
+            '--password', process.env.ARM_CLIENT_SECRET,
+            '--tenant', process.env.ARM_TENANT_ID
+        ], onlyShowErrorsExecOptions);
+        await exec.exec('az', [
+            'account', 'set',
+            '-s', process.env.ARM_SUBSCRIPTION_ID
+        ], onlyShowErrorsExecOptions);
+
+        let deployedAnything = false;
+
+        for (currentRegionMap of availableRegions) {
+            const currentRegion = currentRegionMap.region;
+            if (region && (region != currentRegion)) {
+                core.info(`Not deploying to region ${currentRegion}...`);
+                continue;
+            }
+
+            let storageAccount = `leanix${currentRegion}${environment}`;
+            if (storageAccount.length > 24) {
+                storageAccount = `leanix${currentRegionMap.short}${environment}`;
+            }
+
+            const exitCode = await exec.exec('az', [
+                'storage', 'account', 'show',
+                '--name', storageAccount
+            ], {ignoreReturnCode: true, silent: true});
+            if (exitCode > 0) {
+                core.info(`Not deploying to region ${currentRegion} because no storage account named ${storageAccount} exists.`);
+                continue;
+            }
+
+            let response = '';
+            await exec.exec('az', [
+                'storage', 'container', 'exists',
+                '--account-name', storageAccount,
+                '--name', container
+            ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => response += data}});
+            let result = JSON.parse(response);
+            if (!result.exists) {
+                core.info(`Not deploying to region ${currentRegion} because no container ${container} exists.`);
+                continue;
+            }
+
+            // Sync directory to Azure Blob Storage
+            core.info(`Now deploying to Azure Blob Storage. region: ${currentRegion}`);
+            await exec.exec('./azcopy', [
+                'sync', sourceDirectory,
+                `https://${storageAccount}.blob.core.windows.net/${container}/`,
+                '--recursive',
+                '--delete-destination', deleteDestination ? 'true' : 'false'
+            ]);
+
+            // Fetch SAS token
+            let expires = moment().utc().add(2, 'hours').format();
+            let sasResponse = '';
+            await exec.exec('az', [
+                'storage', 'account', 'generate-sas',
+                '--expiry', expires,
+                '--permissions', 'acuw',
+                '--account-name', storageAccount,
+                '--resource-types', 'o',
+                '--services', 'f',
+                '--https-only',
+                '-o', 'json'
+            ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => sasResponse += data}});
+            let sasToken = JSON.parse(sasResponse);
+
+             // Copy directory to Azure File Storage
+             core.info(`Now deploying to Azure File Storage. region: ${currentRegion}`);
+             await exec.exec('./azcopy', [
+                'copy', sourceDirectory + '/*',
+                `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}?${sasToken}`,
+                '--recursive'
+            ]);
+
+            deployedAnything = true;
+
+            core.info(`Finished deploying to region ${currentRegion}.`);
+        }
+
+        if (!deployedAnything) {
+            throw new Error('Cound not find any container to deploy to!');
+        }
+    } catch (e) {
+        core.setFailed(e.message);
+    }
+})();
+
+})();
+
+module.exports = __webpack_exports__;
 /******/ })()
 ;
