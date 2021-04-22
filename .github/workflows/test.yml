@@ -88,6 +88,14 @@ jobs:
           receivedStylesCss=$(curl -s $(cat STYLES_CSS_BLOB))
           receivedScriptsJs=$(curl -s $(cat SCRIPTS_JS_BLOB))
           receivedLogoutHtml=$(curl -s $(cat LOGOUT_HTML_BLOB))
+          echo "Received Files:"
+          echo $receivedIndexHtml
+          echo $receivedMainJs
+          echo $receivedPolyfillsJs
+          echo $receivedPolyfillsEs5Js
+          echo $receivedStylesCss
+          echo $receivedScriptsJs
+          echo $receivedLogoutHtml
           if [[ $receivedIndexHtml != $(cat EXPECTED_STABLE_INDEX_HTML) || $receivedMainJs != $(cat EXPECTED_STABLE_MAIN_JS) || $receivedPolyfillsJs != $(cat EXPECTED_STABLE_POLYFILLS_JS) || $receivedPolyfillsEs5Js != $(cat EXPECTED_STABLE_POLYFILLS_ES5_JS) || $receivedStylesCss != $(cat EXPECTED_STABLE_STYLES_CSS) || $receivedScriptsJs != $(cat EXPECTED_STABLE_SCRIPTS_JS) || $receivedLogoutHtml != $(cat EXPECTED_STABLE_LOGOUT_HTML) ]] ; then
             echo "::error ::Deployment has not been successful"
             exit 1
