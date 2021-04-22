@@ -13,7 +13,7 @@ with open(pathlib.Path('./test/polyfills-es5.js'), "w") as file:
     file.write("console.log('Breaking polyfills-es5.js change');")
 
 with open(pathlib.Path('./test/styles.css'), "w") as file:
-    file.write(".breakingStylesChange \{\}")
+    file.write(".breakingStylesChange {}")
 
 with open(pathlib.Path('./test/scripts.js'), "w") as file:
     file.write("console.log('Breaking scripts.js change');")
