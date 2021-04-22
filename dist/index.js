@@ -11175,7 +11175,8 @@ const noopStream = __nccwpck_require__(497)();
 const git = __nccwpck_require__(907)();
 const moment = __nccwpck_require__(939);
 
-const filesToVersion = new Set(['index.html', 'main.js']);
+// Version all files that are not cached: https://github.com/leanix/cdn-proxy/blob/master/pkg/cdnproxy/bootstrapHttpHandler.go#L86
+const filesToVersion = new Set(['index.html', 'main.js', 'polyfills.js', 'polyfills-es5.js', 'styles.css', 'scripts.js', 'logout.html']);
 
 (async () => {
     try {

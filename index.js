@@ -6,7 +6,8 @@ const noopStream = require('stream-blackhole')();
 const git = require('simple-git/promise')();
 const moment = require('moment');
 
-const filesToVersion = new Set(['index.html', 'main.js']);
+// Version all files that are not cached: https://github.com/leanix/cdn-proxy/blob/master/pkg/cdnproxy/bootstrapHttpHandler.go#L86
+const filesToVersion = new Set(['index.html', 'main.js', 'polyfills.js', 'polyfills-es5.js', 'styles.css', 'scripts.js', 'logout.html']);
 
 (async () => {
     try {

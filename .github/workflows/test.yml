@@ -46,38 +46,80 @@ jobs:
           region: westeurope
           microfrontend: test-microfrontend
         id: initial-deployment 
+      
+      - name: Define variables
+        run: |
+          echo "https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/index.html" > INDEX_HTML_BLOB
+          echo "https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/main.js" > MAIN_JS_BLOB
+          echo "https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/polyfills.js" > POLYFILLS_JS_BLOB
+          echo "https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/polyfills-es5.js" > POLYFILLS_ES5_JS_BLOB
+          echo "https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/styles.css" > STYLES_CSS_BLOB
+          echo "https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/scripts.js" > SCRIPTS_JS_BLOB
+          echo "https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/logout.html" > LOGOUT_HTML_BLOB
+          echo "https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/index.html?$SAS_TOKEN" > INDEX_HTML_FILE
+          echo "https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/main.js?$SAS_TOKEN" > MAIN_JS_FILE
+          echo "https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/polyfills.js?$SAS_TOKEN" > POLYFILLS_JS_FILE
+          echo "https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/polyfills-es5.js?$SAS_TOKEN" > POLYFILLS_ES5_JS_FILE
+          echo "https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/styles.css?$SAS_TOKEN" > STYLES_CSS_FILE
+          echo "https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/scripts.js?$SAS_TOKEN" > SCRIPTS_JS_FILE
+          echo "https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/logout.html?$SAS_TOKEN" > LOGOUT_HTML_FILE
+          echo "<h1>Hello index.html</h1>" > EXPECTED_STABLE_INDEX_HTML
+          echo "console.log('Hello main.js');" > EXPECTED_STABLE_MAIN_JS
+          echo "console.log('Hello polyfills.js');" > EXPECTED_STABLE_POLYFILLS_JS
+          echo "console.log('Hello polyfills-es5.js');" > EXPECTED_STABLE_POLYFILLS_ES5_JS
+          echo ".helloStyles {}" > EXPECTED_STABLE_STYLES_CSS
+          echo "console.log('Hello scripts.js');" > EXPECTED_STABLE_SCRIPTS_JS
+          echo "<h1>Hello logout.html</h1>" > EXPECTED_STABLE_LOGOUT_HTML
+          echo "<h1>Breaking index.html change</h1>" > EXPECTED_BROKEN_INDEX_HTML
+          echo "console.log('Breaking main.js change');" > EXPECTED_BROKEN_MAIN_JS
+          echo "console.log('Breaking polyfills.js change');" > EXPECTED_BROKEN_POLYFILLS_JS
+          echo "console.log('Breaking polyfills-es5.js change');" > EXPECTED_BROKEN_POLYFILLS_ES5_JS
+          echo ".breakingStylesChange {}" > EXPECTED_BROKEN_STYLES_CSS
+          echo "console.log('Breaking scripts.js change');" > EXPECTED_BROKEN_SCRIPTS_JS
+          echo "<h1>Breaking logout.html change</h1>" > EXPECTED_BROKEN_LOGOUT_HTML
 
       - name: Deployment to Azure Blob storage has been successful
         shell: bash
         run: |
-          expected="<h1>Hello World!</h1>console.log('Hello World!');"
-          received=$(curl -s https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/index.html && curl -s https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/main.js)
-          echo "received: " $received
-          if [[ $received != *"$expected"* ]]; then
+          receivedIndexHtml=$(curl -s $(cat INDEX_HTML_BLOB))
+          receivedMainJs=$(curl -s $(cat MAIN_JS_BLOB))
+          receivedPolyfillsJs=$(curl -s $(cat POLYFILLS_JS_BLOB))
+          receivedPolyfillsEs5Js=$(curl -s $(cat POLYFILLS_ES5_JS_BLOB))
+          receivedStylesCss=$(curl -s $(cat STYLES_CSS_BLOB))
+          receivedScriptsJs=$(curl -s $(cat SCRIPTS_JS_BLOB))
+          receivedLogoutHtml=$(curl -s $(cat LOGOUT_HTML_BLOB))
+          if [[ $receivedIndexHtml != $(cat EXPECTED_STABLE_INDEX_HTML) ||
+                $receivedMainJs !=$(cat EXPECTED_STABLE_MAIN_JS) ||
+                $receivedPolyfillsJs != $(cat EXPECTED_STABLE_POLYFILLS_JS) ||
+                $receivedPolyfillsEs5Js != $(cat EXPECTED_STABLE_POLYFILLS_ES5_JS) ||
+                $receivedStylesCss != $(cat EXPECTED_STABLE_STYLES_CSS) ||
+                $receivedScriptsJs != $(cat EXPECTED_STABLE_SCRIPTS_JS) ||
+                $receivedLogoutHtml != $(cat EXPECTED_STABLE_LOGOUT_HTML)
+              ]] ; then
             echo "::error ::Deployment has not been successful"
             exit 1
           fi
       
       - name: Deployment to Azure File Share has been successful
         run: |
-          expectedIndexHtml="<h1>Hello World!</h1>"
-          indexHtmlUrl="https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/index.html?$SAS_TOKEN"
-          receivedIndexHtml=$(curl -X GET -H "x-ms-date: $(date -u)" "$indexHtmlUrl")
-          if [[ $receivedIndexHtml != *"$expectedIndexHtml"* ]]; then
-            echo "::error ::Deployment of index.html has not been successful"
-            echo "expected: $expectedIndexHtml but received: $receivedIndexHtml"
+          receivedIndexHtml=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat INDEX_HTML_FILE)")
+          receivedMainJs=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat MAIN_JS_FILE)")
+          receivedPolyfillsJs=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat POLYFILLS_JS_FILE)")
+          receivedPolyfillsEs5Js=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat POLYFILLS_ES5_JS_FILE)")
+          receivedStylesCss=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat STYLES_CSS_FILE)")
+          receivedScriptsJs=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat SCRIPTS_JS_FILE)")
+          receivedLogoutHtml=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat LOGOUT_HTML_FILE)")
+          if [[ $receivedIndexHtml != $(cat EXPECTED_STABLE_INDEX_HTML) ||
+                $receivedMainJs !=$(cat EXPECTED_STABLE_MAIN_JS) ||
+                $receivedPolyfillsJs != $(cat EXPECTED_STABLE_POLYFILLS_JS) ||
+                $receivedPolyfillsEs5Js != $(cat EXPECTED_STABLE_POLYFILLS_ES5_JS) ||
+                $receivedStylesCss != $(cat EXPECTED_STABLE_STYLES_CSS) ||
+                $receivedScriptsJs != $(cat EXPECTED_STABLE_SCRIPTS_JS) ||
+                $receivedLogoutHtml != $(cat EXPECTED_STABLE_LOGOUT_HTML)
+              ]] ; then
+            echo "::error ::Deployment has not been successful"
             exit 1
           fi
-          expectedMainJs="console.log('Hello World!');"
-          mainJsUrl="https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/main.js?$SAS_TOKEN"
-          receivedMainJs=$(curl -X GET -H "x-ms-date: $(date -u)" "$mainJsUrl")
-          if [[ $receivedMainJs != *"$expectedMainJs"* ]]; then
-            echo "::error ::Deployment of main.js has not been successful"
-            echo "expected: $expectedMainJs but received: $receivedMainJs"
-            exit 1
-          fi
-          echo $receivedIndexHtml
-          echo $receivedMainJs
 
 
       - name: Modify the microfrontend by introducing a breaking change
@@ -98,34 +140,45 @@ jobs:
       - name: Deployment of breaking change to Azure Blob storage has been successful 
         shell: bash
         run: |
-          expected="<h1>Breaking Change</h1>console.log('Breaking Change');"
-          received=$(curl -s https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/index.html && curl -s https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/main.js)
-          echo "received: " $received
-          if [[ $received != *"$expected"* ]]; then
+          receivedIndexHtml=$(curl -s $(cat INDEX_HTML_BLOB))
+          receivedMainJs=$(curl -s $(cat MAIN_JS_BLOB))
+          receivedPolyfillsJs=$(curl -s $(cat POLYFILLS_JS_BLOB))
+          receivedPolyfillsEs5Js=$(curl -s $(cat POLYFILLS_ES5_JS_BLOB))
+          receivedStylesCss=$(curl -s $(cat STYLES_CSS_BLOB))
+          receivedScriptsJs=$(curl -s $(cat SCRIPTS_JS_BLOB))
+          receivedLogoutHtml=$(curl -s $(cat LOGOUT_HTML_BLOB))
+          if [[ $receivedIndexHtml != $(cat EXPECTED_BROKEN_INDEX_HTML) ||
+                $receivedMainJs !=$(cat EXPECTED_BROKEN_MAIN_JS) ||
+                $receivedPolyfillsJs != $(cat EXPECTED_BROKEN_POLYFILLS_JS) ||
+                $receivedPolyfillsEs5Js != $(cat EXPECTED_BROKEN_POLYFILLS_ES5_JS) ||
+                $receivedStylesCss != $(cat EXPECTED_BROKEN_STYLES_CSS) ||
+                $receivedScriptsJs != $(cat EXPECTED_BROKEN_SCRIPTS_JS) ||
+                $receivedLogoutHtml != $(cat EXPECTED_BROKEN_LOGOUT_HTML)
+              ]] ; then
             echo "::error ::Deployment has not been successful"
             exit 1
           fi
       
       - name: Deployment of breaking change to Azure File Share has been successful
         run: |
-          expectedIndexHtml="<h1>Breaking Change</h1>"
-          indexHtmlUrl="https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/index.html?$SAS_TOKEN"
-          receivedIndexHtml=$(curl -X GET -H "x-ms-date: $(date -u)" "$indexHtmlUrl")
-          if [[ $receivedIndexHtml != *"$expectedIndexHtml"* ]]; then
-            echo "::error ::Deployment of index.html has not been successful"
-            echo "expected: $expectedIndexHtml but received: $receivedIndexHtml"
+          receivedIndexHtml=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat INDEX_HTML_FILE)")
+          receivedMainJs=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat MAIN_JS_FILE)")
+          receivedPolyfillsJs=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat POLYFILLS_JS_FILE)")
+          receivedPolyfillsEs5Js=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat POLYFILLS_ES5_JS_FILE)")
+          receivedStylesCss=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat STYLES_CSS_FILE)")
+          receivedScriptsJs=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat SCRIPTS_JS_FILE)")
+          receivedLogoutHtml=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat LOGOUT_HTML_FILE)")
+          if [[ $receivedIndexHtml != $(cat EXPECTED_BROKEN_INDEX_HTML) ||
+                $receivedMainJs !=$(cat EXPECTED_BROKEN_MAIN_JS) ||
+                $receivedPolyfillsJs != $(cat EXPECTED_BROKEN_POLYFILLS_JS) ||
+                $receivedPolyfillsEs5Js != $(cat EXPECTED_BROKEN_POLYFILLS_ES5_JS) ||
+                $receivedStylesCss != $(cat EXPECTED_BROKEN_STYLES_CSS) ||
+                $receivedScriptsJs != $(cat EXPECTED_BROKEN_SCRIPTS_JS) ||
+                $receivedLogoutHtml != $(cat EXPECTED_BROKEN_LOGOUT_HTML)
+              ]] ; then
+            echo "::error ::Deployment has not been successful"
             exit 1
           fi
-          expectedMainJs="console.log('Breaking Change');"
-          mainJsUrl="https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/main.js?$SAS_TOKEN"
-          receivedMainJs=$(curl -X GET -H "x-ms-date: $(date -u)" "$mainJsUrl")
-          if [[ $receivedMainJs != *"$expectedMainJs"* ]]; then
-            echo "::error ::Deployment of main.js has not been successful"
-            echo "expected: $expectedMainJs but received: $receivedMainJs"
-            exit 1
-          fi
-          echo $receivedIndexHtml
-          echo $receivedMainJs
 
       - name: Rollback the breaking change deployment to the initial deployed version
         uses: ./
@@ -140,34 +193,45 @@ jobs:
       - name: Rollback on Azure Blob storage has been successful
         shell: bash
         run: |
-          expected="<h1>Hello World!</h1>console.log('Hello World!');"
-          received=$(curl -s https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/index.html && curl -s https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/main.js)
-          echo "received: " $received
-          if [[ $received != *"$expected"* ]]; then
-            echo "::error ::Rollback has not been successful"
+          receivedIndexHtml=$(curl -s $(cat INDEX_HTML_BLOB))
+          receivedMainJs=$(curl -s $(cat MAIN_JS_BLOB))
+          receivedPolyfillsJs=$(curl -s $(cat POLYFILLS_JS_BLOB))
+          receivedPolyfillsEs5Js=$(curl -s $(cat POLYFILLS_ES5_JS_BLOB))
+          receivedStylesCss=$(curl -s $(cat STYLES_CSS_BLOB))
+          receivedScriptsJs=$(curl -s $(cat SCRIPTS_JS_BLOB))
+          receivedLogoutHtml=$(curl -s $(cat LOGOUT_HTML_BLOB))
+          if [[ $receivedIndexHtml != $(cat EXPECTED_STABLE_INDEX_HTML) ||
+                $receivedMainJs !=$(cat EXPECTED_STABLE_MAIN_JS) ||
+                $receivedPolyfillsJs != $(cat EXPECTED_STABLE_POLYFILLS_JS) ||
+                $receivedPolyfillsEs5Js != $(cat EXPECTED_STABLE_POLYFILLS_ES5_JS) ||
+                $receivedStylesCss != $(cat EXPECTED_STABLE_STYLES_CSS) ||
+                $receivedScriptsJs != $(cat EXPECTED_STABLE_SCRIPTS_JS) ||
+                $receivedLogoutHtml != $(cat EXPECTED_STABLE_LOGOUT_HTML)
+              ]] ; then
+            echo "::error ::Deployment has not been successful"
             exit 1
           fi
 
       - name: Rollback of breaking change to Azure File Share has been successful
         run: |
-          expectedIndexHtml="<h1>Hello World!</h1>"
-          indexHtmlUrl="https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/index.html?$SAS_TOKEN"
-          receivedIndexHtml=$(curl -X GET -H "x-ms-date: $(date -u)" "$indexHtmlUrl")
-          if [[ $receivedIndexHtml != *"$expectedIndexHtml"* ]]; then
-            echo "::error ::Rollback of index.html has not been successful"
-            echo "expected: $expectedIndexHtml but received: $receivedIndexHtml"
+          receivedIndexHtml=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat INDEX_HTML_FILE)")
+          receivedMainJs=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat MAIN_JS_FILE)")
+          receivedPolyfillsJs=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat POLYFILLS_JS_FILE)")
+          receivedPolyfillsEs5Js=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat POLYFILLS_ES5_JS_FILE)")
+          receivedStylesCss=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat STYLES_CSS_FILE)")
+          receivedScriptsJs=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat SCRIPTS_JS_FILE)")
+          receivedLogoutHtml=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat LOGOUT_HTML_FILE)")
+          if [[ $receivedIndexHtml != $(cat EXPECTED_STABLE_INDEX_HTML) ||
+                $receivedMainJs !=$(cat EXPECTED_STABLE_MAIN_JS) ||
+                $receivedPolyfillsJs != $(cat EXPECTED_STABLE_POLYFILLS_JS) ||
+                $receivedPolyfillsEs5Js != $(cat EXPECTED_STABLE_POLYFILLS_ES5_JS) ||
+                $receivedStylesCss != $(cat EXPECTED_STABLE_STYLES_CSS) ||
+                $receivedScriptsJs != $(cat EXPECTED_STABLE_SCRIPTS_JS) ||
+                $receivedLogoutHtml != $(cat EXPECTED_STABLE_LOGOUT_HTML)
+              ]] ; then
+            echo "::error ::Deployment has not been successful"
             exit 1
-          fi
-          expectedMainJs="console.log('Hello World!');"
-          mainJsUrl="https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/main.js?$SAS_TOKEN"
-          receivedMainJs=$(curl -X GET -H "x-ms-date: $(date -u)" "$mainJsUrl")
-          if [[ $receivedMainJs != *"$expectedMainJs"* ]]; then
-            echo "::error ::Rollback of main.js has not been successful"
-            echo "expected: $expectedMainJs but received: $receivedMainJs"
-            exit 1
-          fi
-          echo $receivedIndexHtml
-          echo $receivedMainJs
+          fi 
 
       - name: Rollback fails, if no rollback-version specified
         uses: ./
