@@ -68,26 +68,9 @@ const moment = require('moment');
             const storageAccount = getStorageAccount(currentRegion, environment);
             const canDeploy = await isExistingStorageAccountAndContainer(storageAccount, container);
             if (canDeploy) {
-                // Sync directory to Azure Blob Storage
-                core.info(`Now deploying to Azure Blob Storage. region: ${currentRegion.name}`);
-                await exec.exec('./azcopy', [
-                    'sync', sourceDirectory,
-                    `https://${storageAccount}.blob.core.windows.net/${container}/`,
-                    '--recursive',
-                    '--delete-destination', deleteDestination ? 'true' : 'false'
-                ]);
-
                 const sasToken = await getSasToken(storageAccount);
-                // Copy directory to Azure File Storage
-                core.info(`Now deploying to Azure File Storage. region: ${currentRegion.name}`);
-                await exec.exec('./azcopy', [
-                    'copy', sourceDirectory + '/*',
-                    `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}?${sasToken}`,
-                    '--recursive'
-                ]);
-
+                await deployToContainerOfStorageAccount(sourceDirectory, storageAccount, container, sasToken, deleteDestination);
                 deployedAnything = true;
-
                 core.info(`Finished deploying to region ${currentRegion.name}.`);
             }
         }
@@ -160,4 +143,34 @@ async function getSasToken(storageAccount) {
     ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => sasResponse += data}});
     const sasToken = JSON.parse(sasResponse);
     return sasToken;
+}
+
+/**
+ * Deploy a sourceDirectory to the specified container of the given storageAccount
+ * @param {string} sourceDirectory name of the directory where the files are located that should be deployed
+ * @param {string} storageAccount e.g. leanixwesteuropetest
+ * @param {string} container e.g. storage-deploy-action-public
+ * @param {string} sasToken token to access Azure File storage on the storageAccount
+ * @param {boolean} deleteDestination whether to delete all files in the container that are not in the sourceDirectory
+ */
+async function deployToContainerOfStorageAccount(sourceDirectory, storageAccount, container, sasToken, deleteDestination) {
+    core.info(`Now deploying to ${storageAccount}!`);
+    if (sourceDirectory.length <= 0) {
+        throw new Error('Please specify a source directory when using this action for deployments.');
+    }
+    // Sync directory to Azure Blob Storage
+    core.info(`Now deploying to Azure Blob Storage ${storageAccount}.`);
+    await exec.exec('./azcopy', [
+        'sync', sourceDirectory + '/',
+        `https://${storageAccount}.blob.core.windows.net/${container}/`,
+        '--recursive',
+        '--delete-destination', deleteDestination ? 'true' : 'false'
+    ]);
+    // Sync directory to Azure File Storage
+    core.info(`Now deploying to Azure File Storage ${storageAccount}.`);
+    await exec.exec('./azcopy', [
+        'copy', sourceDirectory + '/*',
+        `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}?${sasToken}`,
+        '--recursive'
+    ]);
 }
