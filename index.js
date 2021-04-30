@@ -66,63 +66,44 @@ const moment = require('moment');
                 continue;
             }
             const storageAccount = getStorageAccount(currentRegion, environment);
+            const canDeploy = await isExistingStorageAccountAndContainer(storageAccount, container);
+            if (canDeploy) {
+                // Sync directory to Azure Blob Storage
+                core.info(`Now deploying to Azure Blob Storage. region: ${currentRegion.name}`);
+                await exec.exec('./azcopy', [
+                    'sync', sourceDirectory,
+                    `https://${storageAccount}.blob.core.windows.net/${container}/`,
+                    '--recursive',
+                    '--delete-destination', deleteDestination ? 'true' : 'false'
+                ]);
 
-            const exitCode = await exec.exec('az', [
-                'storage', 'account', 'show',
-                '--name', storageAccount
-            ], {ignoreReturnCode: true, silent: true});
-            if (exitCode > 0) {
-                core.info(`Not deploying to region ${currentRegion.name} because no storage account named ${storageAccount} exists.`);
-                continue;
+                // Fetch SAS token
+                let expires = moment().utc().add(2, 'hours').format();
+                let sasResponse = '';
+                await exec.exec('az', [
+                    'storage', 'account', 'generate-sas',
+                    '--expiry', expires,
+                    '--permissions', 'acuw',
+                    '--account-name', storageAccount,
+                    '--resource-types', 'o',
+                    '--services', 'f',
+                    '--https-only',
+                    '-o', 'json'
+                ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => sasResponse += data}});
+                let sasToken = JSON.parse(sasResponse);
+
+                // Copy directory to Azure File Storage
+                core.info(`Now deploying to Azure File Storage. region: ${currentRegion.name}`);
+                await exec.exec('./azcopy', [
+                    'copy', sourceDirectory + '/*',
+                    `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}?${sasToken}`,
+                    '--recursive'
+                ]);
+
+                deployedAnything = true;
+
+                core.info(`Finished deploying to region ${currentRegion.name}.`);
             }
-
-            let response = '';
-            await exec.exec('az', [
-                'storage', 'container', 'exists',
-                '--account-name', storageAccount,
-                '--name', container
-            ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => response += data}});
-            let result = JSON.parse(response);
-            if (!result.exists) {
-                core.info(`Not deploying to region ${currentRegion.name} because no container ${container} exists.`);
-                continue;
-            }
-
-            // Sync directory to Azure Blob Storage
-            core.info(`Now deploying to Azure Blob Storage. region: ${currentRegion.name}`);
-            await exec.exec('./azcopy', [
-                'sync', sourceDirectory,
-                `https://${storageAccount}.blob.core.windows.net/${container}/`,
-                '--recursive',
-                '--delete-destination', deleteDestination ? 'true' : 'false'
-            ]);
-
-            // Fetch SAS token
-            let expires = moment().utc().add(2, 'hours').format();
-            let sasResponse = '';
-            await exec.exec('az', [
-                'storage', 'account', 'generate-sas',
-                '--expiry', expires,
-                '--permissions', 'acuw',
-                '--account-name', storageAccount,
-                '--resource-types', 'o',
-                '--services', 'f',
-                '--https-only',
-                '-o', 'json'
-            ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => sasResponse += data}});
-            let sasToken = JSON.parse(sasResponse);
-
-             // Copy directory to Azure File Storage
-             core.info(`Now deploying to Azure File Storage. region: ${currentRegion.name}`);
-             await exec.exec('./azcopy', [
-                'copy', sourceDirectory + '/*',
-                `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}?${sasToken}`,
-                '--recursive'
-            ]);
-
-            deployedAnything = true;
-
-            core.info(`Finished deploying to region ${currentRegion.name}.`);
         }
 
         if (!deployedAnything) {
@@ -144,4 +125,32 @@ function getStorageAccount(region, environment) {
         storageAccount = `leanix${region.short}${environment}`;
     }
     return storageAccount;
+}
+
+/**
+ * Verifies that both the storage account and the container on the storage account exist.
+ * @param {string} storageAccount e.g. leanixwesteuropetest
+ * @param {string} container e.g. storage-deploy-action-public
+ */
+async function isExistingStorageAccountAndContainer(storageAccount, container) {
+    const exitCode = await exec.exec('az', [
+        'storage', 'account', 'show',
+        '--name', storageAccount
+    ], {ignoreReturnCode: true, silent: true});
+    if (exitCode > 0) {
+        core.info(`Storage Account ${storageAccount} does not exist.`);
+        return false;
+    }
+    let response = '';
+    await exec.exec('az', [
+        'storage', 'container', 'exists',
+        '--account-name', storageAccount,
+        '--name', container
+    ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => response += data}});
+    let result = JSON.parse(response);
+    if (!result.exists) {
+        core.info(`Container ${container} on Storage Account ${storageAccount} does not exist.`);
+        return false;
+    }
+    return true;
 }
