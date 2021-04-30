@@ -27,6 +27,14 @@ jobs:
           sasToken="$(az storage account generate-sas --expiry $expires --permissions r --account-name leanixwesteuropetest --resource-types o --services f --https-only -o json | jq --raw-output)"
           echo "SAS_TOKEN=$(echo $sasToken)" >> $GITHUB_ENV
       
+      - name: Deploy without versioning
+        uses: ./
+        with:
+          container: storage-deploy-action-public
+          source-directory: test 
+          environment: test
+          delete-destination: false
+      
       - name: Deploy a microfrontend to all regions
         uses: ./
         with:
