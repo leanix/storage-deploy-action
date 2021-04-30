@@ -77,21 +77,7 @@ const moment = require('moment');
                     '--delete-destination', deleteDestination ? 'true' : 'false'
                 ]);
 
-                // Fetch SAS token
-                let expires = moment().utc().add(2, 'hours').format();
-                let sasResponse = '';
-                await exec.exec('az', [
-                    'storage', 'account', 'generate-sas',
-                    '--expiry', expires,
-                    '--permissions', 'acuw',
-                    '--account-name', storageAccount,
-                    '--resource-types', 'o',
-                    '--services', 'f',
-                    '--https-only',
-                    '-o', 'json'
-                ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => sasResponse += data}});
-                let sasToken = JSON.parse(sasResponse);
-
+                const sasToken = await getSasToken(storageAccount);
                 // Copy directory to Azure File Storage
                 core.info(`Now deploying to Azure File Storage. region: ${currentRegion.name}`);
                 await exec.exec('./azcopy', [
@@ -153,4 +139,25 @@ async function isExistingStorageAccountAndContainer(storageAccount, container) {
         return false;
     }
     return true;
+}
+
+/**
+ * Fetches a SAS token for accessing Azure File Storage
+ * @param {string} storageAccount account where we want to access the Azure File Storage
+ */
+async function getSasToken(storageAccount) {
+    const expires = moment().utc().add(2, 'hours').format();
+    let sasResponse = '';
+    await exec.exec('az', [
+        'storage', 'account', 'generate-sas',
+        '--expiry', expires,
+        '--permissions', 'acuw',
+        '--account-name', storageAccount,
+        '--resource-types', 'o',
+        '--services', 'f',
+        '--https-only',
+        '-o', 'json'
+    ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => sasResponse += data}});
+    const sasToken = JSON.parse(sasResponse);
+    return sasToken;
 }
