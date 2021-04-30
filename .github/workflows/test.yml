@@ -35,6 +35,7 @@ jobs:
           container: storage-deploy-action-public
           environment: test
           microfrontend: test-microfrontend
+          version-deployment: true
 
       - name: Deploy a microfrontend with region option
         uses: ./
@@ -45,6 +46,7 @@ jobs:
           environment: test
           region: westeurope
           microfrontend: test-microfrontend
+          version-deployment: true
         id: initial-deployment 
       
       - name: Define variables
