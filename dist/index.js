@@ -1,7 +1,7 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 604:
+/***/ 106:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -15,7 +15,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const os = __importStar(__nccwpck_require__(87));
-const utils_1 = __nccwpck_require__(245);
+const utils_1 = __nccwpck_require__(195);
 /**
  * Commands
  *
@@ -87,7 +87,7 @@ function escapeProperty(s) {
 
 /***/ }),
 
-/***/ 127:
+/***/ 712:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -109,9 +109,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const command_1 = __nccwpck_require__(604);
-const file_command_1 = __nccwpck_require__(352);
-const utils_1 = __nccwpck_require__(245);
+const command_1 = __nccwpck_require__(106);
+const file_command_1 = __nccwpck_require__(297);
+const utils_1 = __nccwpck_require__(195);
 const os = __importStar(__nccwpck_require__(87));
 const path = __importStar(__nccwpck_require__(622));
 /**
@@ -332,7 +332,7 @@ exports.getState = getState;
 
 /***/ }),
 
-/***/ 352:
+/***/ 297:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -350,7 +350,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const fs = __importStar(__nccwpck_require__(747));
 const os = __importStar(__nccwpck_require__(87));
-const utils_1 = __nccwpck_require__(245);
+const utils_1 = __nccwpck_require__(195);
 function issueCommand(command, message) {
     const filePath = process.env[`GITHUB_${command}`];
     if (!filePath) {
@@ -368,7 +368,7 @@ exports.issueCommand = issueCommand;
 
 /***/ }),
 
-/***/ 245:
+/***/ 195:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -394,7 +394,7 @@ exports.toCommandValue = toCommandValue;
 
 /***/ }),
 
-/***/ 49:
+/***/ 892:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -409,7 +409,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const tr = __nccwpck_require__(469);
+const tr = __nccwpck_require__(10);
 /**
  * Exec a command.
  * Output will be streamed to the live console.
@@ -438,7 +438,7 @@ exports.exec = exec;
 
 /***/ }),
 
-/***/ 469:
+/***/ 10:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -457,8 +457,8 @@ const os = __nccwpck_require__(87);
 const events = __nccwpck_require__(614);
 const child = __nccwpck_require__(129);
 const path = __nccwpck_require__(622);
-const io = __nccwpck_require__(864);
-const ioUtil = __nccwpck_require__(887);
+const io = __nccwpck_require__(34);
+const ioUtil = __nccwpck_require__(96);
 /* eslint-disable @typescript-eslint/unbound-method */
 const IS_WINDOWS = process.platform === 'win32';
 /*
@@ -1032,7 +1032,7 @@ class ExecState extends events.EventEmitter {
 
 /***/ }),
 
-/***/ 887:
+/***/ 96:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -1234,7 +1234,7 @@ function isUnixExecutable(stats) {
 
 /***/ }),
 
-/***/ 864:
+/***/ 34:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -1252,7 +1252,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const childProcess = __nccwpck_require__(129);
 const path = __nccwpck_require__(622);
 const util_1 = __nccwpck_require__(669);
-const ioUtil = __nccwpck_require__(887);
+const ioUtil = __nccwpck_require__(96);
 const exec = util_1.promisify(childProcess.exec);
 /**
  * Copies a file or folder.
@@ -1531,7 +1531,7 @@ function copyFile(srcFile, destFile, force) {
 
 /***/ }),
 
-/***/ 279:
+/***/ 939:
 /***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
 
 /* module decorator */ module = __nccwpck_require__.nmd(module);
@@ -7208,7 +7208,7 @@ function copyFile(srcFile, destFile, force) {
 
 /***/ }),
 
-/***/ 857:
+/***/ 497:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 var util = __nccwpck_require__(669);
@@ -7347,10 +7347,10 @@ module.exports = require("util");;
 var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
-const core = __nccwpck_require__(127);
-const exec = __nccwpck_require__(49);
-const noopStream = __nccwpck_require__(857)();
-const moment = __nccwpck_require__(279);
+const core = __nccwpck_require__(712);
+const exec = __nccwpck_require__(892);
+const noopStream = __nccwpck_require__(497)();
+const moment = __nccwpck_require__(939);
 
 (async () => {
     try {
@@ -7363,11 +7363,11 @@ const moment = __nccwpck_require__(279);
         const environment = core.getInput('environment') ? core.getInput('environment') : 'test';
         const onlyShowErrorsExecOptions = {outStream: noopStream, errStream: process.stderr};
         const availableRegions = [
-            {region:'westeurope',short:'eu'},
-            {region:'eastus',short:'us'},
-            {region:'canadacentral',short:'ca'},
-            {region:'australiaeast',short:'au'},
-            {region:'germanywestcentral',short:'de'}
+            { name:'westeurope', short:'eu' },
+            { name:'eastus', short:'us' },
+            { name:'canadacentral', short:'ca' },
+            { name:'australiaeast', short:'au' },
+            { name:'germanywestcentral', short:'de' }
         ];
 
         // Check environment
@@ -7376,7 +7376,7 @@ const moment = __nccwpck_require__(279);
         }
 
         // Check region
-        const checkRegions = availableRegions.map(o => o.region);
+        const checkRegions = availableRegions.map(availableRegion => availableRegion.name);
         if (region && !checkRegions.includes(region)) {
             const availableRegionsString = checkRegions.join(', ');
             throw new Error(`Unknown region ${region}, must be one of: ${availableRegionsString}`);
@@ -7409,24 +7409,19 @@ const moment = __nccwpck_require__(279);
 
         let deployedAnything = false;
 
-        for (currentRegionMap of availableRegions) {
-            const currentRegion = currentRegionMap.region;
-            if (region && (region != currentRegion)) {
-                core.info(`Not deploying to region ${currentRegion}...`);
+        for (currentRegion of availableRegions) {
+            if (region && (region != currentRegion.name)) {
+                core.info(`Not deploying to region ${currentRegion.name}...`);
                 continue;
             }
-
-            let storageAccount = `leanix${currentRegion}${environment}`;
-            if (storageAccount.length > 24) {
-                storageAccount = `leanix${currentRegionMap.short}${environment}`;
-            }
+            const storageAccount = getStorageAccount(currentRegion, environment);
 
             const exitCode = await exec.exec('az', [
                 'storage', 'account', 'show',
                 '--name', storageAccount
             ], {ignoreReturnCode: true, silent: true});
             if (exitCode > 0) {
-                core.info(`Not deploying to region ${currentRegion} because no storage account named ${storageAccount} exists.`);
+                core.info(`Not deploying to region ${currentRegion.name} because no storage account named ${storageAccount} exists.`);
                 continue;
             }
 
@@ -7438,12 +7433,12 @@ const moment = __nccwpck_require__(279);
             ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => response += data}});
             let result = JSON.parse(response);
             if (!result.exists) {
-                core.info(`Not deploying to region ${currentRegion} because no container ${container} exists.`);
+                core.info(`Not deploying to region ${currentRegion.name} because no container ${container} exists.`);
                 continue;
             }
 
             // Sync directory to Azure Blob Storage
-            core.info(`Now deploying to Azure Blob Storage. region: ${currentRegion}`);
+            core.info(`Now deploying to Azure Blob Storage. region: ${currentRegion.name}`);
             await exec.exec('./azcopy', [
                 'sync', sourceDirectory,
                 `https://${storageAccount}.blob.core.windows.net/${container}/`,
@@ -7467,7 +7462,7 @@ const moment = __nccwpck_require__(279);
             let sasToken = JSON.parse(sasResponse);
 
              // Copy directory to Azure File Storage
-             core.info(`Now deploying to Azure File Storage. region: ${currentRegion}`);
+             core.info(`Now deploying to Azure File Storage. region: ${currentRegion.name}`);
              await exec.exec('./azcopy', [
                 'copy', sourceDirectory + '/*',
                 `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}?${sasToken}`,
@@ -7476,7 +7471,7 @@ const moment = __nccwpck_require__(279);
 
             deployedAnything = true;
 
-            core.info(`Finished deploying to region ${currentRegion}.`);
+            core.info(`Finished deploying to region ${currentRegion.name}.`);
         }
 
         if (!deployedAnything) {
@@ -7486,6 +7481,19 @@ const moment = __nccwpck_require__(279);
         core.setFailed(e.message);
     }
 })();
+
+/**
+ * Builds the name of the storage account (e.g. leanixwesteuropetest) which is a combination of the region and environment.
+ * @param {string} region e.g. { name: 'germanywestcentral', short: 'de' }
+ * @param {string} environment either 'test' or 'prod'
+ */
+function getStorageAccount(region, environment) {
+    let storageAccount = `leanix${region.name}${environment}`;
+    if (storageAccount.length > 24) {
+        storageAccount = `leanix${region.short}${environment}`;
+    }
+    return storageAccount;
+}
 
 })();
 

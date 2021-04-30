@@ -14,11 +14,11 @@ const moment = require('moment');
         const environment = core.getInput('environment') ? core.getInput('environment') : 'test';
         const onlyShowErrorsExecOptions = {outStream: noopStream, errStream: process.stderr};
         const availableRegions = [
-            {region:'westeurope',short:'eu'},
-            {region:'eastus',short:'us'},
-            {region:'canadacentral',short:'ca'},
-            {region:'australiaeast',short:'au'},
-            {region:'germanywestcentral',short:'de'}
+            { name:'westeurope', short:'eu' },
+            { name:'eastus', short:'us' },
+            { name:'canadacentral', short:'ca' },
+            { name:'australiaeast', short:'au' },
+            { name:'germanywestcentral', short:'de' }
         ];
 
         // Check environment
@@ -27,7 +27,7 @@ const moment = require('moment');
         }
 
         // Check region
-        const checkRegions = availableRegions.map(o => o.region);
+        const checkRegions = availableRegions.map(availableRegion => availableRegion.name);
         if (region && !checkRegions.includes(region)) {
             const availableRegionsString = checkRegions.join(', ');
             throw new Error(`Unknown region ${region}, must be one of: ${availableRegionsString}`);
@@ -60,24 +60,19 @@ const moment = require('moment');
 
         let deployedAnything = false;
 
-        for (currentRegionMap of availableRegions) {
-            const currentRegion = currentRegionMap.region;
-            if (region && (region != currentRegion)) {
-                core.info(`Not deploying to region ${currentRegion}...`);
+        for (currentRegion of availableRegions) {
+            if (region && (region != currentRegion.name)) {
+                core.info(`Not deploying to region ${currentRegion.name}...`);
                 continue;
             }
-
-            let storageAccount = `leanix${currentRegion}${environment}`;
-            if (storageAccount.length > 24) {
-                storageAccount = `leanix${currentRegionMap.short}${environment}`;
-            }
+            const storageAccount = getStorageAccount(currentRegion, environment);
 
             const exitCode = await exec.exec('az', [
                 'storage', 'account', 'show',
                 '--name', storageAccount
             ], {ignoreReturnCode: true, silent: true});
             if (exitCode > 0) {
-                core.info(`Not deploying to region ${currentRegion} because no storage account named ${storageAccount} exists.`);
+                core.info(`Not deploying to region ${currentRegion.name} because no storage account named ${storageAccount} exists.`);
                 continue;
             }
 
@@ -89,12 +84,12 @@ const moment = require('moment');
             ], {outStream: noopStream, errStream: noopStream, listeners: {stdout: data => response += data}});
             let result = JSON.parse(response);
             if (!result.exists) {
-                core.info(`Not deploying to region ${currentRegion} because no container ${container} exists.`);
+                core.info(`Not deploying to region ${currentRegion.name} because no container ${container} exists.`);
                 continue;
             }
 
             // Sync directory to Azure Blob Storage
-            core.info(`Now deploying to Azure Blob Storage. region: ${currentRegion}`);
+            core.info(`Now deploying to Azure Blob Storage. region: ${currentRegion.name}`);
             await exec.exec('./azcopy', [
                 'sync', sourceDirectory,
                 `https://${storageAccount}.blob.core.windows.net/${container}/`,
@@ -118,7 +113,7 @@ const moment = require('moment');
             let sasToken = JSON.parse(sasResponse);
 
              // Copy directory to Azure File Storage
-             core.info(`Now deploying to Azure File Storage. region: ${currentRegion}`);
+             core.info(`Now deploying to Azure File Storage. region: ${currentRegion.name}`);
              await exec.exec('./azcopy', [
                 'copy', sourceDirectory + '/*',
                 `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}?${sasToken}`,
@@ -127,7 +122,7 @@ const moment = require('moment');
 
             deployedAnything = true;
 
-            core.info(`Finished deploying to region ${currentRegion}.`);
+            core.info(`Finished deploying to region ${currentRegion.name}.`);
         }
 
         if (!deployedAnything) {
@@ -137,3 +132,16 @@ const moment = require('moment');
         core.setFailed(e.message);
     }
 })();
+
+/**
+ * Builds the name of the storage account (e.g. leanixwesteuropetest) which is a combination of the region and environment.
+ * @param {string} region e.g. { name: 'germanywestcentral', short: 'de' }
+ * @param {string} environment either 'test' or 'prod'
+ */
+function getStorageAccount(region, environment) {
+    let storageAccount = `leanix${region.name}${environment}`;
+    if (storageAccount.length > 24) {
+        storageAccount = `leanix${region.short}${environment}`;
+    }
+    return storageAccount;
+}
