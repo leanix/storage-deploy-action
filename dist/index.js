@@ -7387,28 +7387,9 @@ const moment = __nccwpck_require__(939);
             throw new Error(`You may not deploy to a container that does not correspond to your repository name (${container} does not contain ${repositoryShortName})`);
         }
 
-        // Install & login to Azure / Azure Copy
-        await exec.exec('wget', ['-q', '-O', 'azcopy.tar.gz', 'https://aka.ms/downloadazcopy-v10-linux'], onlyShowErrorsExecOptions)
-        await exec.exec('tar', ['--strip-components=1', '-xzf', 'azcopy.tar.gz'], onlyShowErrorsExecOptions)
-        core.exportVariable('AZCOPY_SPA_CLIENT_SECRET', process.env.ARM_CLIENT_SECRET)
-        await exec.exec('./azcopy', [
-            'login', '--service-principal',
-            '--application-id', process.env.ARM_CLIENT_ID,
-            '--tenant-id', process.env.ARM_TENANT_ID
-        ], onlyShowErrorsExecOptions);
-        await exec.exec('az', [
-            'login', '--service-principal',
-            '--username', process.env.ARM_CLIENT_ID,
-            '--password', process.env.ARM_CLIENT_SECRET,
-            '--tenant', process.env.ARM_TENANT_ID
-        ], onlyShowErrorsExecOptions);
-        await exec.exec('az', [
-            'account', 'set',
-            '-s', process.env.ARM_SUBSCRIPTION_ID
-        ], onlyShowErrorsExecOptions);
+        await azureInstallAndLogin(onlyShowErrorsExecOptions);
 
         let deployedAnything = false;
-
         for (currentRegion of availableRegions) {
             if (region && (region != currentRegion.name)) {
                 core.info(`Not deploying to region ${currentRegion.name}...`);
@@ -7433,8 +7414,33 @@ const moment = __nccwpck_require__(939);
 })();
 
 /**
+ * Install azcopy and login into Azure.
+ * @param { outStream: Blackhole, errStream: NodeJS.WriteStream } onlyShowErrorsExecOptions 
+ */
+async function azureInstallAndLogin(onlyShowErrorsExecOptions) {
+    await exec.exec('wget', ['-q', '-O', 'azcopy.tar.gz', 'https://aka.ms/downloadazcopy-v10-linux'], onlyShowErrorsExecOptions)
+    await exec.exec('tar', ['--strip-components=1', '-xzf', 'azcopy.tar.gz'], onlyShowErrorsExecOptions)
+    core.exportVariable('AZCOPY_SPA_CLIENT_SECRET', process.env.ARM_CLIENT_SECRET)
+    await exec.exec('./azcopy', [
+        'login', '--service-principal',
+        '--application-id', process.env.ARM_CLIENT_ID,
+        '--tenant-id', process.env.ARM_TENANT_ID
+    ], onlyShowErrorsExecOptions);
+    await exec.exec('az', [
+        'login', '--service-principal',
+        '--username', process.env.ARM_CLIENT_ID,
+        '--password', process.env.ARM_CLIENT_SECRET,
+        '--tenant', process.env.ARM_TENANT_ID
+    ], onlyShowErrorsExecOptions);
+    await exec.exec('az', [
+        'account', 'set',
+        '-s', process.env.ARM_SUBSCRIPTION_ID
+    ], onlyShowErrorsExecOptions);
+}
+
+/**
  * Builds the name of the storage account (e.g. leanixwesteuropetest) which is a combination of the region and environment.
- * @param {string} region e.g. { name: 'germanywestcentral', short: 'de' }
+ * @param { name: string, short: string } region e.g. { name: 'germanywestcentral', short: 'de' }
  * @param {string} environment either 'test' or 'prod'
  */
 function getStorageAccount(region, environment) {
