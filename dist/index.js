@@ -7413,10 +7413,6 @@ const moment = __nccwpck_require__(939);
     }
 })();
 
-/**
- * Install azcopy and login into Azure.
- * @param { outStream: Blackhole, errStream: NodeJS.WriteStream } onlyShowErrorsExecOptions 
- */
 async function azureInstallAndLogin(onlyShowErrorsExecOptions) {
     await exec.exec('wget', ['-q', '-O', 'azcopy.tar.gz', 'https://aka.ms/downloadazcopy-v10-linux'], onlyShowErrorsExecOptions)
     await exec.exec('tar', ['--strip-components=1', '-xzf', 'azcopy.tar.gz'], onlyShowErrorsExecOptions)
@@ -7438,11 +7434,6 @@ async function azureInstallAndLogin(onlyShowErrorsExecOptions) {
     ], onlyShowErrorsExecOptions);
 }
 
-/**
- * Builds the name of the storage account (e.g. leanixwesteuropetest) which is a combination of the region and environment.
- * @param { name: string, short: string } region e.g. { name: 'germanywestcentral', short: 'de' }
- * @param {string} environment either 'test' or 'prod'
- */
 function getStorageAccount(region, environment) {
     let storageAccount = `leanix${region.name}${environment}`;
     if (storageAccount.length > 24) {
@@ -7451,11 +7442,6 @@ function getStorageAccount(region, environment) {
     return storageAccount;
 }
 
-/**
- * Verifies that both the storage account and the container on the storage account exist.
- * @param {string} storageAccount e.g. leanixwesteuropetest
- * @param {string} container e.g. storage-deploy-action-public
- */
 async function isExistingStorageAccountAndContainer(storageAccount, container) {
     const exitCode = await exec.exec('az', [
         'storage', 'account', 'show',
@@ -7479,10 +7465,6 @@ async function isExistingStorageAccountAndContainer(storageAccount, container) {
     return true;
 }
 
-/**
- * Fetches a SAS token for accessing Azure File Storage
- * @param {string} storageAccount account where we want to access the Azure File Storage
- */
 async function getSasToken(storageAccount) {
     const expires = moment().utc().add(2, 'hours').format();
     let sasResponse = '';
@@ -7500,14 +7482,6 @@ async function getSasToken(storageAccount) {
     return sasToken;
 }
 
-/**
- * Deploy a sourceDirectory to the specified container of the given storageAccount
- * @param {string} sourceDirectory name of the directory where the files are located that should be deployed
- * @param {string} storageAccount e.g. leanixwesteuropetest
- * @param {string} container e.g. storage-deploy-action-public
- * @param {string} sasToken token to access Azure File storage on the storageAccount
- * @param {boolean} deleteDestination whether to delete all files in the container that are not in the sourceDirectory
- */
 async function deployToContainerOfStorageAccount(sourceDirectory, storageAccount, container, sasToken, deleteDestination) {
     core.info(`Now deploying to ${storageAccount}!`);
     if (sourceDirectory.length <= 0) {
