@@ -25,11 +25,11 @@ inputs:
     default: 'false'
     required: false
   branch-name:
-    description: 'Name of the branch for which you want to version a deployment',
+    description: 'Name of the branch for which you want to version a deployment'
     default: ''
     required: false
   app-name:
-    description: 'Name of the app for which you want to version a deployment', 
+    description: 'Name of the app for which you want to version a deployment'
     default: ''
     required: false
 outputs:
