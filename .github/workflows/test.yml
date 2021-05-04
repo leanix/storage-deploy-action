@@ -155,7 +155,7 @@ jobs:
         uses: ./
         with:
           source-directory: test
-          container: storage-deploy-action
+          container: storage-deploy-action-public
           environment: test
           region: westeurope
 
