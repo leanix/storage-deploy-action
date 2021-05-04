@@ -2,6 +2,12 @@ const core = require('@actions/core');
 const exec = require('@actions/exec');
 const noopStream = require('stream-blackhole')();
 const moment = require('moment');
+const git = require('simple-git/promise')();
+const fs = require('fs');
+const path = require('path');
+
+// Version all files that are not cached: https://github.com/leanix/cdn-proxy/blob/master/pkg/cdnproxy/bootstrapHttpHandler.go#L86
+const filesToVersion = new Set(['index.html', 'main.js', 'polyfills.js', 'polyfills-es5.js', 'styles.css', 'scripts.js', 'logout.html']);
 
 (async () => {
     try {
@@ -12,6 +18,9 @@ const moment = require('moment');
         const region = core.getInput('region') ? core.getInput('region') : '';
         const deleteDestination = (core.getInput('delete-destination') == 'true') ? true : false;
         const environment = core.getInput('environment') ? core.getInput('environment') : 'test';
+        const versionDeployment = core.getInput('version-deployment') === 'true' ? true : false;
+        const branchName = core.getInput('branch-name') ? core.getInput('branch-name') : '';
+        const appName = core.getInput('app-name') ? core.getInput('app-name') : '';
         const onlyShowErrorsExecOptions = {outStream: noopStream, errStream: process.stderr};
         const availableRegions = [
             { name:'westeurope', short:'eu' },
@@ -53,6 +62,11 @@ const moment = require('moment');
                 await deployToContainerOfStorageAccount(sourceDirectory, storageAccount, container, sasToken, deleteDestination);
                 deployedAnything = true;
                 core.info(`Finished deploying to region ${currentRegion.name}.`);
+                if (versionDeployment) {
+                    const version = await versionBranchOfApp(branchName, appName);
+                    await backupDeployedVersion(version, sasToken, sourceDirectory, storageAccount, container);
+                    core.setOutput('version', version);
+                }
             }
         }
 
@@ -122,7 +136,7 @@ async function getSasToken(storageAccount) {
     await exec.exec('az', [
         'storage', 'account', 'generate-sas',
         '--expiry', expires,
-        '--permissions', 'acuw',
+        '--permissions', 'racw',
         '--account-name', storageAccount,
         '--resource-types', 'o',
         '--services', 'f',
@@ -153,4 +167,77 @@ async function deployToContainerOfStorageAccount(sourceDirectory, storageAccount
         `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}?${sasToken}`,
         '--recursive'
     ]);
+}
+
+async function versionBranchOfApp(branchName, appName) {
+    if (branchName.length <= 0) {
+        throw new Error('Please specify a branch name when using this action with versioning enabled.');
+    }
+
+    const normalizedBranchName = branchName.replace(/\W+/g, '-');
+    const versionTagPrefix = 'VERSION-' + (appName !== '' ? appName.toUpperCase() + '-' : '') + normalizedBranchName.toUpperCase() + '-';
+    const currentCommit = process.env.GITHUB_SHA;
+    await git.fetch(['--tags']); // Fetch all tags
+    const tagsOfCurrentCommitString = await git.tag(
+        [
+            '-l', versionTagPrefix + '*',
+            '--points-at', currentCommit,
+            '--sort', '-v:refname'
+        ]
+    );
+
+    let releaseVersion = 1;
+    if (tagsOfCurrentCommitString.length > 0) {
+        // commit is already tagged, so use that tag as the release version 
+        const tagsOfCurrentCommit = tagsOfCurrentCommitString.split('\n');
+        releaseVersion = parseInt(tagsOfCurrentCommit[0].replace(versionTagPrefix, ''));
+        core.info(`Last commit is already tagged with version ${releaseVersion}`);
+    } else {
+        const allVersionTagsString = await git.tag(
+            [
+                '-l', versionTagPrefix + '*',
+                '--sort', '-v:refname'
+            ]
+        );
+
+        if (allVersionTagsString.length > 0) {
+            // as commit is not yet tagged use the last version bumped up as the release version
+            const allVersionTags = allVersionTagsString.split('\n');
+            releaseVersion = parseInt(allVersionTags[0].replace(versionTagPrefix, '')) + 1;
+        } 
+        core.info(`Next version on branch ${branchName} is ${releaseVersion}`);
+        const releaseVersionTag = `${versionTagPrefix}${releaseVersion}`;
+        await git.tag([releaseVersionTag, process.env.GITHUB_REF]);
+        await git.pushTags();
+    }
+
+    return releaseVersion;
+}
+
+async function backupDeployedVersion(version, sasToken, sourceDirectory, storageAccount, container) {
+    const directory = await fs.promises.opendir(sourceDirectory);
+    for await (const entry of directory) {
+        if (entry.isFile() && filesToVersion.has(entry.name)) {
+            const filename = path.parse(entry.name).name;
+            const extension = path.parse(entry.name).ext;
+            const versionedFilename = `${filename}_${version}${extension}`;
+            core.info(`Creating versioned file ${versionedFilename} for ${entry.name} in Azure Blob storage.`);
+            await exec.exec('./azcopy', [
+                'copy', `${sourceDirectory}/${entry.name}`,
+                `https://${storageAccount}.blob.core.windows.net/${container}/${versionedFilename}`
+            ]);
+            try {
+                core.info(`Creating versioned file ${versionedFilename} for ${entry.name} in Azure File storage.`);
+                await exec.exec('./azcopy', [
+                    'copy', `${sourceDirectory}/${entry.name}`,
+                    `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}/${versionedFilename}?${sasToken}`
+                ]);
+            } catch (e) {
+                core.info('Backup to file share failed');
+                return;
+            }
+            
+        }
+    }
+    core.info(`Finished creation of backup ${version} in ${storageAccount}.blob.core.windows.net/${container} and ${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}.`);
 }
