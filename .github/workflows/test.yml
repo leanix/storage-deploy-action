@@ -120,7 +120,7 @@ jobs:
           fi
 
       - name: Versioned deployment to Azure File Share has been successful
-        -run: |
+        run: |
           echo ${{ steps.versioned-deployment.outputs.version }} > VERSION
           echo "https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/index_$(cat VERSION).html?$SAS_TOKEN" > VERSIONED_INDEX_HTML_FILE
           echo "https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/main_$(cat VERSION).js?$SAS_TOKEN" > VERSIONED_MAIN_JS_FILE
