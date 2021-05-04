@@ -282,4 +282,5 @@ jobs:
           container: storage-deploy-action-public
           environment: test
           region: westeurope
+          delete-destination: false
           version-deployment: true
