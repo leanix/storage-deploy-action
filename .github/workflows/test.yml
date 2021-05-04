@@ -48,6 +48,13 @@ jobs:
           echo ".helloStyles {}" > EXPECTED_STABLE_STYLES_CSS
           echo "console.log('Hello scripts.js');" > EXPECTED_STABLE_SCRIPTS_JS
           echo "<h1>Hello logout.html</h1>" > EXPECTED_STABLE_LOGOUT_HTML
+          echo "<h1>Breaking index.html change</h1>" > EXPECTED_BROKEN_INDEX_HTML
+          echo "console.log('Breaking main.js change');" > EXPECTED_BROKEN_MAIN_JS
+          echo "console.log('Breaking polyfills.js change');" > EXPECTED_BROKEN_POLYFILLS_JS
+          echo "console.log('Breaking polyfills-es5.js change');" > EXPECTED_BROKEN_POLYFILLS_ES5_JS
+          echo ".breakingStylesChange {}" > EXPECTED_BROKEN_STYLES_CSS
+          echo "console.log('Breaking scripts.js change');" > EXPECTED_BROKEN_SCRIPTS_JS
+          echo "<h1>Breaking logout.html change</h1>" > EXPECTED_BROKEN_LOGOUT_HTML
 
       - name: Use storage deploy action
         uses: ./
@@ -140,6 +147,84 @@ jobs:
             echo "::error ::Deployment has not been successful"
             exit 1
           fi
+      
+      - name: Introduce breaking change
+        run: python ./.github/workflows/make_breaking_change.py
+      
+      - name: Deploy a breaking change without versioning
+        uses: ./
+        with:
+          source-directory: test
+          container: storage-deploy-action-public
+          environment: test
+          region: westeurope
+          delete-destination: false
+
+      - name: Deployment of breaking change to Azure Blob storage successful
+        run: |
+          receivedIndexHtml=$(curl -s $(cat INDEX_HTML_BLOB))
+          receivedMainJs=$(curl -s $(cat MAIN_JS_BLOB))
+          receivedPolyfillsJs=$(curl -s $(cat POLYFILLS_JS_BLOB))
+          receivedPolyfillsEs5Js=$(curl -s $(cat POLYFILLS_ES5_JS_BLOB))
+          receivedStylesCss=$(curl -s $(cat STYLES_CSS_BLOB))
+          receivedScriptsJs=$(curl -s $(cat SCRIPTS_JS_BLOB))
+          receivedLogoutHtml=$(curl -s $(cat LOGOUT_HTML_BLOB))
+          if [[ $receivedIndexHtml != $(cat EXPECTED_BROKEN_INDEX_HTML) || $receivedMainJs != $(cat EXPECTED_BROKEN_MAIN_JS) || $receivedPolyfillsJs != $(cat EXPECTED_BROKEN_POLYFILLS_JS) || $receivedPolyfillsEs5Js != $(cat EXPECTED_BROKEN_POLYFILLS_ES5_JS) || $receivedStylesCss != $(cat EXPECTED_BROKEN_STYLES_CSS) || $receivedScriptsJs != $(cat EXPECTED_BROKEN_SCRIPTS_JS) || $receivedLogoutHtml != $(cat EXPECTED_BROKEN_LOGOUT_HTML) ]] ; then
+            echo "::error ::Deployment has not been successful"
+            exit 1
+          fi
+      
+      - name: Deployment of breaking change to Azure File Share successful
+        run: |
+          receivedIndexHtml=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat INDEX_HTML_FILE)")
+          receivedMainJs=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat MAIN_JS_FILE)")
+          receivedPolyfillsJs=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat POLYFILLS_JS_FILE)")
+          receivedPolyfillsEs5Js=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat POLYFILLS_ES5_JS_FILE)")
+          receivedStylesCss=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat STYLES_CSS_FILE)")
+          receivedScriptsJs=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat SCRIPTS_JS_FILE)")
+          receivedLogoutHtml=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat LOGOUT_HTML_FILE)")
+          if [[ $receivedIndexHtml != $(cat EXPECTED_BROKEN_INDEX_HTML) || $receivedMainJs != $(cat EXPECTED_BROKEN_MAIN_JS) || $receivedPolyfillsJs != $(cat EXPECTED_BROKEN_POLYFILLS_JS) || $receivedPolyfillsEs5Js != $(cat EXPECTED_BROKEN_POLYFILLS_ES5_JS) || $receivedStylesCss != $(cat EXPECTED_BROKEN_STYLES_CSS) || $receivedScriptsJs != $(cat EXPECTED_BROKEN_SCRIPTS_JS) || $receivedLogoutHtml != $(cat EXPECTED_BROKEN_LOGOUT_HTML) ]] ; then
+            echo "::error ::Deployment has not been successful"
+            exit 1
+          fi
+      
+      - name: Rollback breaking change
+        uses: ./
+        with:
+          source-directory: test
+          container: storage-deploy-action-public
+          environment: test
+          region: westeurope
+          in-rollback-mode: true
+          rollback-version: ${{ steps.versioned-deployment.outputs.version }}
+      
+      - name: Rollback on Azure Blob storage successful
+        run: |
+          receivedIndexHtml=$(curl -s $(cat INDEX_HTML_BLOB))
+          receivedMainJs=$(curl -s $(cat MAIN_JS_BLOB))
+          receivedPolyfillsJs=$(curl -s $(cat POLYFILLS_JS_BLOB))
+          receivedPolyfillsEs5Js=$(curl -s $(cat POLYFILLS_ES5_JS_BLOB))
+          receivedStylesCss=$(curl -s $(cat STYLES_CSS_BLOB))
+          receivedScriptsJs=$(curl -s $(cat SCRIPTS_JS_BLOB))
+          receivedLogoutHtml=$(curl -s $(cat LOGOUT_HTML_BLOB))
+          if [[ $receivedIndexHtml != $(cat EXPECTED_STABLE_INDEX_HTML) || $receivedMainJs != $(cat EXPECTED_STABLE_MAIN_JS) || $receivedPolyfillsJs != $(cat EXPECTED_STABLE_POLYFILLS_JS) || $receivedPolyfillsEs5Js != $(cat EXPECTED_STABLE_POLYFILLS_ES5_JS) || $receivedStylesCss != $(cat EXPECTED_STABLE_STYLES_CSS) || $receivedScriptsJs != $(cat EXPECTED_STABLE_SCRIPTS_JS) || $receivedLogoutHtml != $(cat EXPECTED_STABLE_LOGOUT_HTML) ]] ; then
+            echo "::error ::Rollback has not been successful"
+            exit 1
+          fi
+      
+      - name: Rollback on Azure File Share successful
+        run: |
+          receivedIndexHtml=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat INDEX_HTML_FILE)")
+          receivedMainJs=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat MAIN_JS_FILE)")
+          receivedPolyfillsJs=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat POLYFILLS_JS_FILE)")
+          receivedPolyfillsEs5Js=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat POLYFILLS_ES5_JS_FILE)")
+          receivedStylesCss=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat STYLES_CSS_FILE)")
+          receivedScriptsJs=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat SCRIPTS_JS_FILE)")
+          receivedLogoutHtml=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat LOGOUT_HTML_FILE)")
+          if [[ $receivedIndexHtml != $(cat EXPECTED_STABLE_INDEX_HTML) || $receivedMainJs != $(cat EXPECTED_STABLE_MAIN_JS) || $receivedPolyfillsJs != $(cat EXPECTED_STABLE_POLYFILLS_JS) || $receivedPolyfillsEs5Js != $(cat EXPECTED_STABLE_POLYFILLS_ES5_JS) || $receivedStylesCss != $(cat EXPECTED_STABLE_STYLES_CSS) || $receivedScriptsJs != $(cat EXPECTED_STABLE_SCRIPTS_JS) || $receivedLogoutHtml != $(cat EXPECTED_STABLE_LOGOUT_HTML) ]] ; then
+            echo "::error ::Rollback has not been successful"
+            exit 1
+          fi 
 
       - name: Should fail because of unsupported region
         uses: ./
@@ -179,3 +264,22 @@ jobs:
           source-directory: test
           container: storage-deploy-action-public
           environment: foobar
+
+      - name: Rollback fails, if no rollback-version specified
+        uses: ./
+        continue-on-error: true
+        with:
+          source-directory: test
+          container: storage-deploy-action-public
+          environment: test
+          in-rollback-mode: true
+
+      - name: Versioned deployment fails without branch name
+        uses: ./
+        continue-on-error: true
+        with:
+          source-directory: test
+          container: storage-deploy-action-public
+          environment: test
+          region: westeurope
+          version-deployment: true
