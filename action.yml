@@ -20,6 +20,21 @@ inputs:
     description: 'Delete files on destination if they no longer exist in the source'
     default: 'true'
     required: false
+  version-deployment:
+    description: 'Whether to version the deployment'
+    default: 'false'
+    required: false
+  branch-name:
+    description: 'Name of the branch for which you want to version a deployment',
+    default: ''
+    required: false
+  app-name:
+    description: 'Name of the app for which you want to version a deployment', 
+    default: ''
+    required: false
+outputs:
+  version:
+    description: 'The deployed version number'
 runs:
   using: 'node12'
   main: 'dist/index.js'
