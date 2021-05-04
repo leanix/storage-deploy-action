@@ -32,6 +32,14 @@ inputs:
     description: 'Name of the app for which you want to version a deployment'
     default: ''
     required: false
+  in-rollback-mode:
+    description: 'Start the action in rollback mode (nothing will be deployed)'
+    default: 'false'
+    required: false
+  rollback-version:
+    description: 'The version to roll back to if in rollback mode'
+    default: ''
+    required: false
 outputs:
   version:
     description: 'The deployed version number'

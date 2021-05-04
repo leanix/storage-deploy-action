@@ -11190,6 +11190,8 @@ const filesToVersion = new Set(['index.html', 'main.js', 'polyfills.js', 'polyfi
         const versionDeployment = core.getInput('version-deployment') === 'true' ? true : false;
         const branchName = core.getInput('branch-name') ? core.getInput('branch-name') : '';
         const appName = core.getInput('app-name') ? core.getInput('app-name') : '';
+        const inRollbackMode = core.getInput('in-rollback-mode') === 'true' ? true : false;
+        const rollbackVersion = core.getInput('rollback-version') ? core.getInput('rollback-version') : '';
         const onlyShowErrorsExecOptions = {outStream: noopStream, errStream: process.stderr};
         const availableRegions = [
             { name:'westeurope', short:'eu' },
@@ -11218,29 +11220,48 @@ const filesToVersion = new Set(['index.html', 'main.js', 'polyfills.js', 'polyfi
 
         await azureInstallAndLogin(onlyShowErrorsExecOptions);
 
-        let deployedAnything = false;
-        for (currentRegion of availableRegions) {
-            if (region && (region != currentRegion.name)) {
-                core.info(`Not deploying to region ${currentRegion.name}...`);
-                continue;
+        if (inRollbackMode) {
+            if (rollbackVersion.length <= 0) {
+                throw new Error('No version specified for rollback!');
             }
-            const storageAccount = getStorageAccount(currentRegion, environment);
-            const canDeploy = await isExistingStorageAccountAndContainer(storageAccount, container);
-            if (canDeploy) {
-                const sasToken = await getSasToken(storageAccount);
-                await deployToContainerOfStorageAccount(sourceDirectory, storageAccount, container, sasToken, deleteDestination);
-                deployedAnything = true;
-                core.info(`Finished deploying to region ${currentRegion.name}.`);
-                if (versionDeployment) {
-                    const version = await versionBranchOfApp(branchName, appName);
-                    await backupDeployedVersion(version, sasToken, sourceDirectory, storageAccount, container);
-                    core.setOutput('version', version);
+            for (currentRegion of availableRegions) {
+                if (region && (region !== currentRegion.name)) {
+                    core.info(`Not rolling back region ${currentRegion.name}...`);
+                    continue;
+                }
+                const storageAccount = getStorageAccount(currentRegion, environment);
+                const canRollback = await isExistingStorageAccountAndContainer(storageAccount, container);
+                if (canRollback) {
+                    const sasToken = await getSasToken(storageAccount);
+                    await rollbackStorageAccount(rollbackVersion, sasToken, storageAccount, container);
                 }
             }
         }
+        else {
+            let deployedAnything = false;
+            for (currentRegion of availableRegions) {
+                if (region && (region != currentRegion.name)) {
+                    core.info(`Not deploying to region ${currentRegion.name}...`);
+                    continue;
+                }
+                const storageAccount = getStorageAccount(currentRegion, environment);
+                const canDeploy = await isExistingStorageAccountAndContainer(storageAccount, container);
+                if (canDeploy) {
+                    const sasToken = await getSasToken(storageAccount);
+                    await deployToContainerOfStorageAccount(sourceDirectory, storageAccount, container, sasToken, deleteDestination);
+                    deployedAnything = true;
+                    core.info(`Finished deploying to region ${currentRegion.name}.`);
+                    if (versionDeployment) {
+                        const version = await versionBranchOfApp(branchName, appName);
+                        await backupDeployedVersion(version, sasToken, sourceDirectory, storageAccount, container);
+                        core.setOutput('version', version);
+                    }
+                }
+            }
 
-        if (!deployedAnything) {
-            throw new Error('Cound not find any container to deploy to!');
+            if (!deployedAnything) {
+                throw new Error('Cound not find any container to deploy to!');
+            }
         }
     } catch (e) {
         core.setFailed(e.message);
@@ -11409,6 +11430,66 @@ async function backupDeployedVersion(version, sasToken, sourceDirectory, storage
         }
     }
     core.info(`Finished creation of backup ${version} in ${storageAccount}.blob.core.windows.net/${container} and ${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}.`);
+}
+
+async function rollbackStorageAccount(rollbackVersion, sasToken, storageAccount, container) {
+    const exitCode = await exec.exec(
+        'az', 
+        ['storage', 'account', 'show', '--name', storageAccount],
+        {ignoreReturnCode: true, silent: true}
+    );
+    if (exitCode > 0) {
+        core.info(`Not rolling back ${storageAccount} because account does not exist.`);
+        return false;
+    }
+    core.info(`Rolling back ${storageAccount} to version ${rollbackVersion}.`)
+    for (let file of filesToVersion) {
+        await rollbackFileOnBlobStorage(file, rollbackVersion, storageAccount, container);
+        await rollbackFileOnFileShare(file, rollbackVersion, sasToken, storageAccount, container);
+    }
+    return true;
+}
+
+async function rollbackFileOnBlobStorage(file, rollbackVersion, storageAccount, container) {
+    const filename = path.parse(file).name;
+    const extension = path.parse(file).ext;
+    try {
+        // Download versioned file from blob storage
+        await exec.exec('./azcopy', [
+            'cp',
+            `https://${storageAccount}.blob.core.windows.net/${container}/${filename}_${rollbackVersion}${extension}`,
+            `rollback-blob-storage/${filename}_${rollbackVersion}${extension}`
+        ]);
+        // Upload versioned file as unversioned file to blob storage
+        await exec.exec('./azcopy', [
+            'copy', `rollback-blob-storage/${filename}_${rollbackVersion}${extension}`,
+            `https://${storageAccount}.blob.core.windows.net/${container}/${file}`
+        ]);
+    } catch (e) {
+        core.info(`File https://${storageAccount}.blob.core.windows.net/${container}/${filename}_${rollbackVersion}${extension} does not exist in blob storage container.`);
+        return;
+    }
+}
+
+async function rollbackFileOnFileShare(file, rollbackVersion, sasToken, storageAccount, container) {
+    const filename = path.parse(file).name;
+    const extension = path.parse(file).ext;
+    try {
+        // Download versioned file from file storage
+        await exec.exec('./azcopy', [
+            'cp',
+            `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}/${filename}_${rollbackVersion}${extension}?${sasToken}`,
+            `rollback-file-share/${filename}_${rollbackVersion}${extension}`
+        ]);
+        // Upload versioned file as unversioned file to file storage
+        await exec.exec('./azcopy', [
+            'copy', `rollback-file-share/${filename}_${rollbackVersion}${extension}`,
+            `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}/${file}?${sasToken}`
+        ]);
+    } catch (e) {
+        core.info(`File https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}/${filename}_${rollbackVersion}${extension} does not exist in file storage container.`);
+        return;
+    }
 }
 
 })();
