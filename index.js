@@ -2,7 +2,7 @@ const core = require('@actions/core');
 const exec = require('@actions/exec');
 const noopStream = require('stream-blackhole')();
 const moment = require('moment');
-const git = require('simple-git/promise');
+const git = require('simple-git/promise')();
 const fs = require('fs');
 const path = require('path');
 

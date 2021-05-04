@@ -11171,7 +11171,7 @@ const core = __nccwpck_require__(712);
 const exec = __nccwpck_require__(892);
 const noopStream = __nccwpck_require__(497)();
 const moment = __nccwpck_require__(939);
-const git = __nccwpck_require__(907);
+const git = __nccwpck_require__(907)();
 const fs = __nccwpck_require__(747);
 const path = __nccwpck_require__(622);
 
