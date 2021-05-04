@@ -272,7 +272,7 @@ jobs:
           source-directory: test
           container: storage-deploy-action-public
           environment: test
-          rollback-mode: true
+          in-rollback-mode: true
 
       - name: Versioned deployment fails without branch name
         uses: ./
