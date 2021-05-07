@@ -20,6 +20,25 @@ inputs:
     description: 'Delete files on destination if they no longer exist in the source'
     default: 'true'
     required: false
+  version-deployment:
+    description: 'Whether to version the deployment'
+    default: 'false'
+    required: false
+  app-name:
+    description: 'Name of the app for which you want to version a deployment'
+    default: ''
+    required: false
+  in-rollback-mode:
+    description: 'Start the action in rollback mode (nothing will be deployed)'
+    default: 'false'
+    required: false
+  rollback-version:
+    description: 'The version to roll back to if in rollback mode'
+    default: ''
+    required: false
+outputs:
+  version:
+    description: 'The deployed version number'
 runs:
   using: 'node12'
   main: 'dist/index.js'
