@@ -16,6 +16,11 @@ jobs:
       
       - name: Fetch SAS token to access leanixwesteuropetest Azure File Storage
         run: ./.github/workflows/fetch_sas_token.sh
+        env:
+          ARM_CLIENT_ID: ${{ env.ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ env.ARM_CLIENT_SECRET }}
+          ARM_TENANT_ID: ${{ env.ARM_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ env.ARM_SUBSCRIPTION_ID }}
       
       - name: Define variables
         run: |
