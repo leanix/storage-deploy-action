@@ -43,20 +43,10 @@ jobs:
           region: westeurope
       
       - name: Deployment to Azure Blob Storage has been successful
-        run: |
-          receivedTestTxt=$(curl -s $(cat TEST_TXT_BLOB))
-          if [[ $receivedTestTxt != $(cat EXPECTED_TEST_TXT) ]] ; then
-            echo "::error ::Deployment has not been successful"
-            exit 1
-          fi
+        run: sh ./.github/workflows/validate_azure_blob_deployment.sh
       
       - name: Deployment to Azure File Share has been successful
-        run: |
-          receivedTestTxt=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat TEST_TXT_FILE)")
-          if [[ $receivedTestTxt != $(cat EXPECTED_TEST_TXT) ]] ; then
-            echo "::error ::Deployment has not been successful"
-            exit 1
-          fi
+        run: sh ./.github/workflows/validate_azure_file_share_deployment.sh
       
       - name: Use storage deploy action with versioning
         uses: ./
@@ -70,26 +60,9 @@ jobs:
         id: versioned-deployment
       
       - name: Versioned deployment to Azure Blob storage has been successful
-        run: |
-          echo ${{ steps.versioned-deployment.outputs.version }} > VERSION
-          echo "https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/index_$(cat VERSION).html" > VERSIONED_INDEX_HTML_BLOB
-          echo "https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/main_$(cat VERSION).js" > VERSIONED_MAIN_JS_BLOB
-          echo "https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/polyfills_$(cat VERSION).js" > VERSIONED_POLYFILLS_JS_BLOB
-          echo "https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/polyfills-es5_$(cat VERSION).js" > VERSIONED_POLYFILLS_ES5_JS_BLOB
-          echo "https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/styles_$(cat VERSION).css" > VERSIONED_STYLES_CSS_BLOB
-          echo "https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/scripts_$(cat VERSION).js" > VERSIONED_SCRIPTS_JS_BLOB
-          echo "https://leanixwesteuropetest.blob.core.windows.net/storage-deploy-action-public/logout_$(cat VERSION).html" > VERSIONED_LOGOUT_HTML_BLOB
-          receivedVersionedIndexHtml=$(curl -s $(cat VERSIONED_INDEX_HTML_BLOB))
-          receivedVersionedMainJs=$(curl -s $(cat VERSIONED_MAIN_JS_BLOB))
-          receivedVersionedPolyfillsJs=$(curl -s $(cat VERSIONED_POLYFILLS_JS_BLOB))
-          receivedVersionedPolyfillsEs5Js=$(curl -s $(cat VERSIONED_POLYFILLS_ES5_JS_BLOB))
-          receivedVersionedStylesCss=$(curl -s $(cat VERSIONED_STYLES_CSS_BLOB))
-          receivedVersionedScriptsJs=$(curl -s $(cat VERSIONED_SCRIPTS_JS_BLOB))
-          receivedVersionedLogoutHtml=$(curl -s $(cat VERSIONED_LOGOUT_HTML_BLOB))
-          if [[ $receivedVersionedIndexHtml != $(cat EXPECTED_STABLE_INDEX_HTML) || $receivedVersionedMainJs != $(cat EXPECTED_STABLE_MAIN_JS) || $receivedVersionedPolyfillsJs != $(cat EXPECTED_STABLE_POLYFILLS_JS) || $receivedVersionedPolyfillsEs5Js != $(cat EXPECTED_STABLE_POLYFILLS_ES5_JS) || $receivedVersionedStylesCss != $(cat EXPECTED_STABLE_STYLES_CSS) || $receivedVersionedScriptsJs != $(cat EXPECTED_STABLE_SCRIPTS_JS) || $receivedVersionedLogoutHtml != $(cat EXPECTED_STABLE_LOGOUT_HTML) ]] ; then
-            echo "::error ::Versioned Deployment has not been successful"
-            exit 1
-          fi
+        run: sh ./.github/workflows/validate_versioned_azure_blob_deployment.sh
+        env:
+          VERSION: ${{ steps.versioned-deployment.outputs.version }}
 
       - name: Versioned deployment to Azure File Share has been successful
         run: |
