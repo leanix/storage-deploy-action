@@ -13,7 +13,6 @@ with:
   region: westeurope           # Optional, region to deploy to, default is all regions having a suitable storage account and container
   delete-destination: false    # Optional, whether to delete files in the destination that are no longer existing in the source directory, defaults to 'true'
   version-deployment: false    # Optional, whether to create versioned backup of all uncached files
-  branch-name: ''              # Optional, branch name for which a new version should be deployed. Is required if the deployment should be versioned
   app-name: ''                 # Optional, name of the app that for which a new version should be deployed. Is used for creating a git tag for the version
   in-rollback-mode: false      # Optional, activate rollback mode. No files will be deployed in rollback mode
   rollback-version:            # Optional, define a rollback version. Required when in rollback mode to identify the version to roll back to

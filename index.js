@@ -19,7 +19,6 @@ const filesToVersion = new Set(['index.html', 'main.js', 'polyfills.js', 'polyfi
         const deleteDestination = (core.getInput('delete-destination') == 'true') ? true : false;
         const environment = core.getInput('environment') ? core.getInput('environment') : 'test';
         const versionDeployment = core.getInput('version-deployment') === 'true' ? true : false;
-        const branchName = core.getInput('branch-name') ? core.getInput('branch-name') : '';
         const appName = core.getInput('app-name') ? core.getInput('app-name') : '';
         const inRollbackMode = core.getInput('in-rollback-mode') === 'true' ? true : false;
         const rollbackVersion = core.getInput('rollback-version') ? core.getInput('rollback-version') : '';
@@ -83,7 +82,7 @@ const filesToVersion = new Set(['index.html', 'main.js', 'polyfills.js', 'polyfi
                     deployedAnything = true;
                     core.info(`Finished deploying to region ${currentRegion.name}.`);
                     if (versionDeployment) {
-                        const version = await versionBranchOfApp(branchName, appName);
+                        const version = await versionBranchOfApp(appName);
                         await backupDeployedVersion(version, sasToken, sourceDirectory, storageAccount, container);
                         core.setOutput('version', version);
                     }
@@ -190,9 +189,10 @@ async function deployToContainerOfStorageAccount(sourceDirectory, storageAccount
     ]);
 }
 
-async function versionBranchOfApp(branchName, appName) {
+async function versionBranchOfApp(appName) {
+    const branchName = process.env.GITHUB_REF.replace(/^refs\/heads\//, '');
     if (branchName.length <= 0) {
-        throw new Error('Please specify a branch name when using this action with versioning enabled.');
+        throw new Error('Please execute this action on a branch, if you want to version a deployment.');
     }
 
     const normalizedBranchName = branchName.replace(/\W+/g, '-');

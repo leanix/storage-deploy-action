@@ -87,11 +87,6 @@ jobs:
             exit 1
           fi
       
-      - name: Extract branch name
-        shell: bash
-        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-        id: extract-branch
-      
       - name: Use storage deploy action with versioning
         uses: ./
         with:
@@ -101,7 +96,6 @@ jobs:
           region: westeurope
           version-deployment: true
           app-name: test-microfrontend
-          branch-name: ${{ steps.extract-branch.outputs.branch }}
         id: versioned-deployment
       
       - name: Versioned deployment to Azure Blob storage has been successful
@@ -273,14 +267,3 @@ jobs:
           container: storage-deploy-action-public
           environment: test
           in-rollback-mode: true
-
-      - name: Versioned deployment fails without branch name
-        uses: ./
-        continue-on-error: true
-        with:
-          source-directory: test
-          container: storage-deploy-action-public
-          environment: test
-          region: westeurope
-          delete-destination: false
-          version-deployment: true
