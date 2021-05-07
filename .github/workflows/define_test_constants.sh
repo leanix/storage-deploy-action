@@ -15,7 +15,7 @@ echo "https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-d
 echo "https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/scripts.js?$SAS_TOKEN" > SCRIPTS_JS_FILE
 echo "https://leanixwesteuropetest.file.core.windows.net/k8s-cdn-proxy/storage-deploy-action-public/logout.html?$SAS_TOKEN" > LOGOUT_HTML_FILE
 echo "hello world" > EXPECTED_TEST_TXT
-echo "<h1>Hello index</h1>" > EXPECTED_STABLE_INDEX_HTML
+echo "<h1>Hello index.html</h1>" > EXPECTED_STABLE_INDEX_HTML
 echo "console.log('Hello main.js');" > EXPECTED_STABLE_MAIN_JS
 echo "console.log('Hello polyfills.js');" > EXPECTED_STABLE_POLYFILLS_JS
 echo "console.log('Hello polyfills-es5.js');" > EXPECTED_STABLE_POLYFILLS_ES5_JS
