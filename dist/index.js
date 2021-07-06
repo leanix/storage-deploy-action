@@ -11359,10 +11359,15 @@ async function deployToContainerOfStorageAccount(sourceDirectory, storageAccount
     const rootFilesPattern = Array.from(filesToVersion).join(';');
     await exec.exec('./azcopy', [
         'copy', sourceDirectory + '/*',
-        `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}?${sasToken}`,
+        `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}/nextRelease?${sasToken}`,
         '--exclude-path', rootFilesPattern,
         '--recursive'
-    ])
+    ]);
+    await exec.exec('./azcopy', [
+        'copy', `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}/nextRelease/*?${sasToken}`,
+        `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}?${sasToken}`,
+        '--recursive'
+    ]);
     // Sync uncached root files to the File storage
     // because now all other files have been uploaded
     await exec.exec('./azcopy', [
