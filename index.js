@@ -180,11 +180,26 @@ async function deployToContainerOfStorageAccount(sourceDirectory, storageAccount
         '--recursive',
         '--delete-destination', deleteDestination ? 'true' : 'false'
     ]);
+
     // Sync directory to Azure File Storage
     core.info(`Now deploying to Azure File Storage ${storageAccount}.`);
+    // Sync all files but the uncached root files to the File storage
+    // because customers receive chunk loading errors when accessing an index.html file referencing
+    // not yet uploaded artifacts.
+    // It then might take up to two minutes before the app is usable again.
+    const rootFilesPattern = Array.from(filesToVersion).join(';');
     await exec.exec('./azcopy', [
         'copy', sourceDirectory + '/*',
         `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}?${sasToken}`,
+        '--exclude-path', rootFilesPattern,
+        '--recursive'
+    ])
+    // Sync uncached root files to the File storage
+    // because now all other files have been uploaded
+    await exec.exec('./azcopy', [
+        'copy', sourceDirectory + '/*',
+        `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}?${sasToken}`,
+        '--include-path', rootFilesPattern,
         '--recursive'
     ]);
 }
