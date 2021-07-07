@@ -11376,6 +11376,11 @@ async function deployToContainerOfStorageAccount(sourceDirectory, storageAccount
         '--include-path', rootFilesPattern,
         '--recursive'
     ]);
+    // Delete nextRelease/ directory
+    await exec.exec('./azcopy', [
+        'rm', `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}/nextRelease?${sasToken}`,
+        '--recursive'
+    ]);
 }
 
 async function versionBranchOfApp(appName) {
