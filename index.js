@@ -209,7 +209,7 @@ async function deployToContainerOfStorageAccount(sourceDirectory, storageAccount
     ]);
     // Delete nextRelease/ directory
     await exec.exec('./azcopy', [
-        'rm', `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}/nextRelease?${sasToken}`,
+        'rm', `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}/nextRelease/*?${sasToken}`,
         '--recursive'
     ]);
 }
