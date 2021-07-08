@@ -11367,7 +11367,7 @@ async function deployToContainerOfStorageAccount(sourceDirectory, storageAccount
     // Copy all files from the nextRelease/ directory into the root directory
     await exec.exec('./azcopy', [
         'copy', `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}/nextRelease/*?${sasToken}`,
-        `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}?${sasToken}`,
+        `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}`,
         '--recursive'
     ]);
     // Delete nextRelease/ directory
