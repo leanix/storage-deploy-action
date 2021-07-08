@@ -141,7 +141,7 @@ jobs:
       
       - name: Deployment of breaking change to Azure File Share successful
         run: |
-          sleep 5
+          sleep 30
           receivedIndexHtml=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat INDEX_HTML_FILE)")
           receivedMainJs=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat MAIN_JS_FILE)")
           receivedPolyfillsJs=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat POLYFILLS_JS_FILE)")
