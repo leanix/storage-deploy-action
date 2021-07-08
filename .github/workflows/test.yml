@@ -150,6 +150,13 @@ jobs:
           receivedLogoutHtml=$(curl -X GET -H "x-ms-date: $(date -u)" "$(cat LOGOUT_HTML_FILE)")
           if [[ $receivedIndexHtml != $(cat EXPECTED_BROKEN_INDEX_HTML) || $receivedMainJs != $(cat EXPECTED_BROKEN_MAIN_JS) || $receivedPolyfillsJs != $(cat EXPECTED_BROKEN_POLYFILLS_JS) || $receivedPolyfillsEs5Js != $(cat EXPECTED_BROKEN_POLYFILLS_ES5_JS) || $receivedStylesCss != $(cat EXPECTED_BROKEN_STYLES_CSS) || $receivedScriptsJs != $(cat EXPECTED_BROKEN_SCRIPTS_JS) || $receivedLogoutHtml != $(cat EXPECTED_BROKEN_LOGOUT_HTML) ]] ; then
             echo "::error ::Deployment has not been successful"
+            echo "Received index.html: $receivedIndexHtml"
+            echo "Received main.js $receivedMainJs"
+            echo "Received polyfills.js $receivedPolyfillsJs"
+            echo "Received polyfills-es5.js $receivedPolyfillsEs5Js"
+            echo "Received styles.css $receivedStylesCss"
+            echo "Received scripts.js $receivedScriptsJs"
+            echo "Received logout.html $receivedLogoutHtml"
             exit 1
           fi
       
