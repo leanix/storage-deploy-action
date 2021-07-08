@@ -11357,28 +11357,21 @@ async function deployToContainerOfStorageAccount(sourceDirectory, storageAccount
     // not yet uploaded artifacts.
     // It then might take up to two minutes before the app is usable again.
     const rootFilesPattern = Array.from(filesToVersion).join(';');
+    // Upload all files to nextRelease/ directory
     await exec.exec('./azcopy', [
         'copy', sourceDirectory + '/*',
         `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}/nextRelease?${sasToken}`,
-        '--exclude-path', rootFilesPattern,
         '--recursive'
     ]);
+    // Copy all files from the nextRelease/ directory into the root directory
     await exec.exec('./azcopy', [
         'copy', `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}/nextRelease/*?${sasToken}`,
         `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}?${sasToken}`,
         '--recursive'
     ]);
-    // Sync uncached root files to the File storage
-    // because now all other files have been uploaded
-    await exec.exec('./azcopy', [
-        'copy', sourceDirectory + '/*',
-        `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}?${sasToken}`,
-        '--include-path', rootFilesPattern,
-        '--recursive'
-    ]);
     // Delete nextRelease/ directory
     await exec.exec('./azcopy', [
-        'rm', `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}/nextRelease/*?${sasToken}`,
+        'rm', `https://${storageAccount}.file.core.windows.net/k8s-cdn-proxy/${container}/nextRelease?${sasToken}`,
         '--recursive'
     ]);
 }
